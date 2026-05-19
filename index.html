@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ตารางคำนวณคะแนนรายวัน</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #f5f4f0;
+            --surface: #ffffff;
+            --surface2: #f0eeea;
+            --border: #e0ddd6;
+            --border2: #ccc9c0;
+            --text: #1a1916;
+            --text2: #6b6860;
+            --text3: #9b9890;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem 0.75rem 3rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .page {
+            max-width: 960px;
+            margin: 0 auto
+        }
+
+        /* Profile Manager Box */
+        .profile-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .profile-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .profile-select {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border2);
+            background: var(--surface);
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .input-profile-name {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border2);
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        /* สำหรับปุ่ม Import/Export ที่เพิ่มเข้ามาใหม่ */
+        .io-actions-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .io-actions-row .btn {
+            flex: 1;
+            justify-content: center;
+            font-size: 11px;
+            padding: 8px;
+        }
+
+        .btn-io-export {
+            background: #4a148c;
+            color: #fff;
+            border-color: #4a148c;
+        }
+
+        .btn-io-import {
+            background: #2e7d32;
+            color: #fff;
+            border-color: #2e7d32;
+        }
+
+        /* header */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .page-title {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.01em
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            width: 100%
+        }
+
+        .top-actions .btn {
+            flex: 1;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 500;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border2);
+            background: var(--surface);
+            color: var(--text2);
+            cursor: pointer;
+            transition: all 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            background: var(--surface2)
+        }
+
+        .btn-primary {
+            background: var(--text);
+            color: #fff;
+            border-color: var(--text);
+        }
+
+        .btn-danger {
+            background: #b71c1c;
+            color: #fff;
+            border-color: #b71c1c;
+        }
+
+        .btn svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0
+        }
+
+        /* banner */
+        .banner {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 12px;
+        }
+
+        .banner-label {
+            font-size: 11px;
+            color: var(--text3);
+            margin-bottom: 2px;
+            font-weight: 500;
+            text-transform: uppercase
+        }
+
+        .banner-score {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text);
+            font-variant-numeric: tabular-nums
+        }
+
+        .banner-right {
+            text-align: right
+        }
+
+        .banner-sub {
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 2px
+        }
+
+        /* grid */
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 12px;
+            margin-bottom: 1rem
+        }
+
+        /* card */
+        .day-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .day-header {
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .day-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 7px
+        }
+
+        .day-total {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            font-variant-numeric: tabular-nums
+        }
+
+        .hd-tue {
+            background: #b71c1c
+        }
+
+        .hd-wed {
+            background: #bf360c
+        }
+
+        .hd-thu {
+            background: #4a148c
+        }
+
+        .hd-fri {
+            background: #0d47a1
+        }
+
+        .hd-sat {
+            background: #1b5e20
+        }
+
+        .hd-sun {
+            background: #004d40
+        }
+
+        /* items */
+        .items-list {
+            padding: 4px 0
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--bg);
+        }
+
+        .item-row:last-child {
+            border-bottom: none
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            grid-column: 1
+        }
+
+        .dot-yellow {
+            background: #f9a825
+        }
+
+        .dot-orange {
+            background: #d84315
+        }
+
+        .dot-cyan {
+            background: #00838f
+        }
+
+        .dot-green {
+            background: #2e7d32
+        }
+
+        .dot-none {
+            background: transparent
+        }
+
+        .item-main {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .item-label {
+            font-size: 12px;
+            color: var(--text);
+            line-height: 1.3;
+            word-break: break-word
+        }
+
+        .item-pts {
+            font-size: 10px;
+            color: var(--text3);
+            font-variant-numeric: tabular-nums;
+            margin-top: 1px
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            grid-column: 3;
+            justify-self: end
+        }
+
+        .btn-c {
+            width: 28px;
+            height: 28px;
+            /* ขยายขนาดปุ่มให้จิ้มบนมือถือง่ายขึ้น */
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            background: var(--surface2);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text2);
+            user-select: none;
+        }
+
+        .btn-c:target,
+        .btn-c:active {
+            background: var(--border);
+            color: var(--text)
+        }
+
+        .cnt-input {
+            width: 42px;
+            height: 28px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface2);
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            font-family: inherit;
+            padding: 0;
+            font-variant-numeric: tabular-nums;
+            -moz-appearance: textfield;
+        }
+
+        .cnt-input::-webkit-outer-spin-button,
+        .cnt-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .cnt-input:focus {
+            outline: none;
+            border-color: var(--text2);
+            background: #fff
+        }
+
+        .item-sub {
+            grid-column: 4;
+            font-size: 11px;
+            min-width: 52px;
+            text-align: right;
+            color: var(--text3);
+            font-variant-numeric: tabular-nums
+        }
+
+        .sub-active {
+            color: var(--text);
+            font-weight: 600
+        }
+
+        /* note */
+        .note,
+        .note1 {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            font-size: 12px;
+            color: var(--text2);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .note strong,
+        .note1 strong {
+            color: var(--text);
+            font-weight: 600
+        }
+
+        /* legend */
+        .legend {
+            display: flex;
+            gap: 10px 14px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            font-size: 11px;
+            color: var(--text3);
+            align-items: center;
+            padding: 0 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%
+        }
+
+        @media(min-width:600px) {
+            .top-actions {
+                width: auto
+            }
+
+            .profile-section {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            body {
+                padding: 1.5rem 1rem 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <div class="top-bar">
+            <div class="page-title">ตารางคำนวณคะแนนรายวัน</div>
+            <div class="top-actions">
+                <button class="btn" onclick="resetAll()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>
+                    รีเซ็ตแต้ม
+                </button>
+                <button class="btn btn-primary" onclick="downloadHTML()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    สำรองไฟล์ HTML
+                </button>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <div class="profile-row" style="flex: 1;">
+                <span style="font-size:13px; font-weight:600; white-space:nowrap;">โปรไฟล์:</span>
+                <select class="profile-select" id="profile-select" onchange="switchProfile(this.value)"></select>
+                <button class="btn btn-danger" onclick="deleteProfile()" style="padding: 7px 10px;">ลบ</button>
+            </div>
+            <div class="profile-row" style="flex: 1;">
+                <input type="text" class="input-profile-name" id="new-profile-name" placeholder="ชื่อโปรไฟล์ใหม่...">
+                <button class="btn" onclick="createNewProfile()">+ สร้างใหม่</button>
+            </div>
+            <div class="io-actions-row">
+                <button class="btn btn-io-export" onclick="exportProfilesJSON()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                        <polyline points="16 6 12 2 8 6" />
+                        <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                    ส่งออกข้อมูล (.json)
+                </button>
+                <button class="btn btn-io-import" onclick="document.getElementById('import-json-file').click()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    นำเข้าข้อมูล
+                </button>
+                <input type="file" id="import-json-file" accept=".json" onchange="importProfilesJSON(event)"
+                    style="display: none;">
+            </div>
+        </div>
+
+        <div class="banner">
+            <div>
+                <div class="banner-label">คะแนนรวมทั้งหมด</div>
+                <div class="banner-score" id="grand-total">0</div>
+            </div>
+            <div class="banner-right">
+                <div class="banner-sub" id="active-days">—</div>
+            </div>
+        </div>
+
+        <div class="note1">
+            <strong>หมายเหตุTop:</strong> กิลด์บริจาคได้วันละ 12 ครั้ง 5500 แต้ม / ปราบกิลด์ 3 ครั้ง / ฟาร์มเคออส 8
+            ครั้ง / ปราบผู้นำ 7 ครั้ง / ทดสอบทีม 20 ครั้ง / อารีน่า 113 ครั้ง / โดม 10 ครั้ง
+        </div>
+
+        <div class="legend">
+            <span>สี:</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span>ล็อคอิน</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#f9a825"></span>ไอเทมพิเศษ</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#d84315"></span>กิตส์/ดอรอง</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#00838f"></span>คริสตัลฟ้า</span>
+        </div>
+
+        <div class="days-grid" id="days-grid"></div>
+
+        <div class="note">
+            <strong>หมายเหตุ:</strong> อัญเชิญรูน &amp; วัตถุโบราณ → อังคาร &amp;
+            เสาร์เท่านั้น · ลงแคนลับ → พฤหัส &amp;
+            เสาร์เท่านั้น · ใช้เหรียญกิลด์ → พุธ &amp; อาทิตย์ · ส่งคริสตัล → อังคาร &amp; เสาร์ · ใช้กุญแจทอง →
+            พฤหัสเท่านั้น · อารีน่า → ศุกร์เท่านั้น (อาทิตย์คัดขึ้นได้)
+        </div>
+
+    </div>
+
+    <script>
+        const daysData = [
+            {
+                id: "tue", name: "อังคาร", cls: "hd-tue", items: [
+                    { label: "ล็อคอิน", pts: 3000, color: "green" },
+                    { label: "ผ่านด่านฟาร์มเคออส 1 ครั้ง", pts: 600, color: "none" },
+                    { label: "ฟาร์มการปราบผู้นำ 1 ครั้ง", pts: 800, color: "none" },
+                    { label: "อัญเชิญรูน 1 ครั้ง", pts: 60, color: "yellow" },
+                    { label: "โบราณคดีโบราณวัตถุ 1 ครั้ง", pts: 80, color: "none" },
+                    { label: "ส่งคริสตัล 10 เม็ด ให้กับปราชญ์", pts: 10, color: "none" },
+                    { label: "ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ", pts: 10, color: "cyan" },
+                    { label: "เติมเงิน 1 บาท", pts: 50, color: "none" },
+                ]
+            },
+            {
+                id: "wed", name: "พุธ", cls: "hd-wed", items: [
+                    { label: "ล็อคอิน", pts: 3000, color: "green" },
+                    { label: "ผ่านด่านการทดสอบทีม 1 ครั้ง", pts: 800, color: "none" },
+                    { label: "บริจาคกิลด์ 1 ครั้ง", pts: 400, color: "none" },
+                    { label: "ดอรองราคากิลด์ 1 ครั้ง", pts: 1000, color: "orange" },
+                    { label: "ฟาร์มการปราบกิลด์ 1 ครั้ง", pts: 800, color: "none" },
+                    { label: "ใช้เหรียญกิลด์ 1000 เหรียญ", pts: 50, color: "none" },
+                    { label: "ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ", pts: 10, color: "cyan" },
+                    { label: "เติมเงิน 1 บาท", pts: 50, color: "none" },
+                ]
+            },
+            {
+                id: "thu", name: "พฤหัส", cls: "hd-thu", items: [
+                    { label: "ล็อคอิน", pts: 3000, color: "green" },
+                    { label: "ใช้กุญแจเวท 1 อัน", pts: 100, color: "yellow" },
+                    { label: "ใช้การคุ้มครองลอย 1 ชิ้น", pts: 2000, color: "none" },
+                    { label: "ใช้ความโปรดปรานของโนคอส 1 ชิ้น", pts: 2000, color: "none" },
+                    { label: "ใช้ความโปรดปรานของโนคอส 1 ชั้น ", pts: 2000, color: "none" },
+                    { label: "ใช้ความโปรดปรานจากโนคอส 1 ชั้น", pts: 2000, color: "none" },
+                    { label: "ใช้แก่นพลังมืด 100ชิ้น", pts: 80, color: "none" },
+                    { label: "ใช้กุญแจทอง 1 ดอก", pts: 500, color: "none" },
+                    { label: "ใช้กุญแจเงิน 1 ดอก", pts: 50, color: "yellow" },
+                    { label: "เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ", pts: 10, color: "cyan" },
+                    { label: "เติมเงิน 1 บาท", pts: 50, color: "none" },
+                ]
+            },
+            {
+                id: "fri", name: "ศุกร์", cls: "hd-fri", items: [
+                    { label: "ล็อคอิน", pts: 3000, color: "green" },
+                    { label: "อารีน่า 1 ครั้ง", pts: 600, color: "none" },
+                    { label: "ชนะอารีน่า 1 ครั้ง", pts: 200, color: "none" },
+                    { label: "สงครามโดม 1 ครั้ง", pts: 1000, color: "none" },
+                    { label: "ชนะในสงครามโดม 1 ครั้ง", pts: 300, color: "none" },
+                    { label: "ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ", pts: 10, color: "cyan" },
+                    { label: "เติมเงิน 1 บาท", pts: 50, color: "none" },
+                ]
+            },
+            {
+                id: "sat", name: "เสาร์", cls: "hd-sat", items: [
+                    { label: "ล็อคอิน", pts: 3000, color: "green" },
+                    { label: "ใช้กุญแจเวท 1 อัน", pts: 100, color: "yellow" },
+                    { label: "ใช้การคุ้มครองลอย 1 ชิ้น", pts: 2000, color: "none" },
+                    { label: "ใช้ความโปรดปรานของโนคอส 1 ชิ้น", pts: 2000, color: "none" },
+                    { label: "ใช้ความโปรดปรานของโนคอส 1 ชั้น ", pts: 2000, color: "none" },
+                    { label: "ใช้ความโปรดปรานจากโนคอส 1 ชั้น", pts: 2000, color: "none" },
+                    { label: "ใช้ยาวิญญาณเวท 1 ขวด", pts: 20, color: "none" },
+                    { label: "ใช้แก่นพลังมืด 100 ชิ้น", pts: 80, color: "none" },
+                    { label: "อัญเชิญรูน 1 ครั้ง", pts: 60, color: "yellow" },
+                    { label: "โบราณคดีโบราณวัตถุ 1 ครั้ง", pts: 80, color: "none" },
+                    { label: "ส่งคริสตัลพลัง 10 เม็ด ให้กับปริญญ์", pts: 10, color: "none" },
+                    { label: "ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ", pts: 10, color: "cyan" },
+                    { label: "เติมเงิน 1 บาท", pts: 50, color: "none" },
+                ]
+            },
+            {
+                id: "sun", name: "อาทิตย์", cls: "hd-sun", items: [
+                    { label: "ล็อคอิน", pts: 3000, color: "green" },
+                    { label: "ฟาร์มดอรองราคากิลด์ 1 ครั้ง", pts: 1000, color: "orange" },
+                    { label: "ฟาร์มการบริจาคกิลด์ 1 ครั้ง", pts: 400, color: "none" },
+                    { label: "ฟาร์มการปราบกิลด์ 3 ครั้ง", pts: 800, color: "none" },
+                    { label: "ตอไปในโรงถั่ง 1 ดอง 1 ครั้ง", pts: 10000, color: "orange" },
+                    { label: "ได้รับดาว 1 ดวง ในโจมตีกิลด์", pts: 4000, color: "none" },
+                    { label: "ใช้เหรียญกิลด์ 1000 เหรียญ", pts: 50, color: "none" },
+                    { label: "ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ", pts: 10, color: "cyan" },
+                    { label: "เติมเงิน 1 บาท", pts: 50, color: "none" },
+                ]
+            },
+        ];
+
+        // โครงสร้างหลักของระบบบันทึกโปรไฟล์
+        let appState = {
+            currentProfile: "Default",
+            profiles: {
+                "Default": {}
+            }
+        };
+
+        function dotClass(c) {
+            if (c === "yellow") return "dot dot-yellow";
+            if (c === "orange") return "dot dot-orange";
+            if (c === "cyan") return "dot dot-cyan";
+            if (c === "green") return "dot dot-green";
+            return "dot dot-none";
+        }
+
+        function fmt(n) { return n.toLocaleString("th-TH") }
+
+        // ฟังก์ชันโหลดข้อมูลจากเครื่อง
+        function loadFromStorage() {
+            const saved = localStorage.getItem("daily_score_app_data");
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                    if (!appState.profiles || Object.keys(appState.profiles).length === 0) {
+                        appState.profiles = { "Default": {} };
+                    }
+                    if (!appState.currentProfile || !appState.profiles[appState.currentProfile]) {
+                        appState.currentProfile = Object.keys(appState.profiles)[0];
+                    }
+                } catch (e) {
+                    console.error("Error loading data", e);
+                }
+            }
+        }
+
+        // ฟังก์ชันเซฟข้อมูลลงเครื่อง
+        function saveToStorage() {
+            localStorage.setItem("daily_score_app_data", JSON.stringify(appState));
+        }
+
+        function getCounts() {
+            return appState.profiles[appState.currentProfile] || {};
+        }
+
+        function getGrand() {
+            let g = 0;
+            const counts = getCounts();
+            daysData.forEach(d => d.items.forEach((it, i) => {
+                g += (counts[d.id + "_" + i] || 0) * it.pts;
+            }));
+            return g;
+        }
+
+        function getDayTotal(day) {
+            let t = 0;
+            const counts = getCounts();
+            day.items.forEach((_, i) => { t += (counts[day.id + "_" + i] || 0) * day.items[i].pts });
+            return t;
+        }
+
+        function updateSummary() {
+            const grand = getGrand();
+            document.getElementById("grand-total").textContent = fmt(grand);
+            const active = daysData.filter(d => getDayTotal(d) > 0).map(d => d.name).join(", ");
+            document.getElementById("active-days").textContent = active ? "วันที่บันทึก: " + active : "ยังไม่ได้กรอกข้อมูล";
+        }
+
+        function updateItem(key, dayId) {
+            const day = daysData.find(d => d.id === dayId);
+            const idx = parseInt(key.split("_")[1]);
+            const counts = getCounts();
+            const sub = (counts[key] || 0) * day.items[idx].pts;
+            const subEl = document.getElementById("sub_" + key);
+            if (subEl) { subEl.textContent = sub > 0 ? fmt(sub) : "—"; subEl.className = "item-sub" + (sub > 0 ? " sub-active" : "") }
+            const cntEl = document.getElementById("cnt_" + key);
+            if (cntEl) cntEl.value = counts[key] || 0;
+            document.getElementById("dtotal_" + dayId).textContent = fmt(getDayTotal(day)) + " คะแนน";
+            updateSummary();
+            saveToStorage(); // บันทึกทันทีเมื่อมีการอัปเดตข้อมูล
+        }
+
+        function change(key, dayId, delta) {
+            const counts = getCounts();
+            counts[key] = Math.max(0, (counts[key] || 0) + delta);
+            updateItem(key, dayId);
+        }
+
+        function handleInput(key, dayId) {
+            const v = parseInt(document.getElementById("cnt_" + key).value) || 0;
+            const counts = getCounts();
+            counts[key] = Math.max(0, v);
+            document.getElementById("cnt_" + key).value = counts[key];
+            updateItem(key, dayId);
+        }
+
+        /* ระบบจัดการโปรไฟล์ */
+        function updateProfileDropdown() {
+            const select = document.getElementById("profile-select");
+            select.innerHTML = "";
+            Object.keys(appState.profiles).forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p;
+                opt.textContent = p;
+                if (p === appState.currentProfile) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function createNewProfile() {
+            const input = document.getElementById("new-profile-name");
+            const name = input.value.trim();
+            if (!name) return alert("กรุณากรอกชื่อโปรไฟล์");
+            if (appState.profiles[name]) return alert("มีโปรไฟล์ชื่อนี้อยู่แล้ว");
+
+            appState.profiles[name] = {};
+            appState.currentProfile = name;
+            input.value = "";
+
+            saveToStorage();
+            updateProfileDropdown();
+            render();
+        }
+
+        function switchProfile(name) {
+            if (!appState.profiles[name]) return;
+            appState.currentProfile = name;
+            saveToStorage();
+            render();
+        }
+
+        function deleteProfile() {
+            const name = appState.currentProfile;
+            if (Object.keys(appState.profiles).length <= 1) {
+                return alert("ต้องมีอย่างน้อย 1 โปรไฟล์ ไม่สามารถลบได้ทั้งหมด");
+            }
+            if (!confirm(`คุณต้องการลบโปรไฟล์ "${name}" ใช่หรือไม่?`)) return;
+
+            delete appState.profiles[name];
+            appState.currentProfile = Object.keys(appState.profiles)[0];
+
+            saveToStorage();
+            updateProfileDropdown();
+            render();
+        }
+
+        /* ฟังก์ชันส่งออกข้อมูลโปรไฟล์ทั้งหมดเป็นไฟล์ .json */
+        function exportProfilesJSON() {
+            const dataStr = JSON.stringify(appState, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json;charset=utf-8" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "score_profiles_backup.json";
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        /* ฟังก์ชันนำเข้าข้อมูลโปรไฟล์จากไฟล์ .json เข้ามาเขียนทับ */
+        function importProfilesJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.profiles && importedData.currentProfile) {
+                        if (confirm("การนำเข้าข้อมูลจะเขียนทับโปรไฟล์ปัจจุบันในเครื่องทั้งหมด คุณต้องการดำเนินการต่อใช่หรือไม่?")) {
+                            appState = importedData;
+                            saveToStorage();
+                            loadFromStorage();
+                            updateProfileDropdown();
+                            render();
+                            alert("นำเข้าข้อมูลโปรไฟล์สำเร็จแล้ว!");
+                        }
+                    } else {
+                        alert("โครงสร้างไฟล์ข้อมูลไม่ถูกต้อง ไม่สามารถนำเข้าได้");
+                    }
+                } catch (err) {
+                    alert("เกิดข้อผิดพลาดในการอ่านไฟล์ กรุณาตรวจสอบว่าเป็นไฟล์ .json ที่ถูกต้อง");
+                }
+                event.target.value = ''; // เคลียร์ไฟล์เพื่อให้เลือกไฟล์ซ้ำได้
+            };
+            reader.readAsText(file);
+        }
+
+        function render() {
+            const grid = document.getElementById("days-grid");
+            grid.innerHTML = "";
+            const counts = getCounts();
+
+            daysData.forEach(day => {
+                const card = document.createElement("div");
+                card.className = "day-card";
+                let rows = "";
+                day.items.forEach((item, idx) => {
+                    const key = day.id + "_" + idx;
+                    if (!counts[key]) counts[key] = 0;
+                    const sub = counts[key] * item.pts;
+                    rows += `<div class="item-row">
+        <div class="${dotClass(item.color)}"></div>
+        <div class="item-main">
+          <span class="item-label">${item.label}</span>
+          <span class="item-pts">${fmt(item.pts)} แต้ม</span>
+        </div>
+        <div class="counter">
+          <button class="btn-c" onclick="change('${key}','${day.id}',-1)" aria-label="ลด">−</button>
+          <input class="cnt-input" id="cnt_${key}" type="number" pattern="[0-9]*" inputmode="numeric" min="0" value="${counts[key]}"
+            onchange="handleInput('${key}','${day.id}')"
+            oninput="handleInput('${key}','${day.id}')"
+            aria-label="จำนวน">
+          <button class="btn-c" onclick="change('${key}','${day.id}',1)" aria-label="เพิ่ม">+</button>
+        </div>
+        <span class="item-sub${sub > 0 ? " sub-active" : ""}" id="sub_${key}">${sub > 0 ? fmt(sub) : "—"}</span>
+      </div>`;
+                });
+                const dt = getDayTotal(day);
+                card.innerHTML = `<div class="day-header ${day.cls}">
+      <span class="day-name">${day.name}</span>
+      <span class="day-total" id="dtotal_${day.id}">${fmt(dt)} คะแนน</span>
+    </div>
+    <div class="items-list">${rows}</div>`;
+                grid.appendChild(card);
+            });
+            updateSummary();
+        }
+
+        function resetAll() {
+            if (!confirm("รีเซ็ตคะแนนของโปรไฟล์นี้ทั้งหมด?")) return;
+            const counts = getCounts();
+            Object.keys(counts).forEach(k => counts[k] = 0);
+            saveToStorage();
+            render();
+        }
+
+        function downloadHTML() {
+            const html = document.documentElement.outerHTML;
+            const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "daily_score_calculator.html";
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // เริ่มต้นระบบ
+        loadFromStorage();
+        updateProfileDropdown();
+        render();
+    </script>
+</body>
+
+</html>
