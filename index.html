@@ -353,7 +353,6 @@
         .btn-c {
             width: 28px;
             height: 28px;
-            /* ขยายขนาดปุ่มให้จิ้มบนมือถือง่ายขึ้น */
             border: 1px solid var(--border);
             border-radius: 50%;
             background: var(--surface2);
@@ -472,6 +471,85 @@
                 padding: 1.5rem 1rem 3rem;
             }
         }
+
+        /* =========================================================
+           ส่วน CSS ที่เพิ่มเข้ามาใหม่สำหรับ Progress Bar และ Rewards
+           ========================================================= */
+        .progress-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 14px;
+            background: var(--surface2);
+            border-radius: 7px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #00838f;
+            border-radius: 7px;
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .progress-markers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateX(-50%);
+        }
+        .reward-summary-box {
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+        }
+        .reward-item {
+            display: inline-block;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            border-radius: 6px;
+            margin: 3px 3px 3px 0;
+            font-size: 11.5px;
+            color: var(--text);
+        }
+        .reward-item span {
+            font-weight: 600;
+            color: #d84315;
+            margin-left: 4px;
+        }
+        .next-reward-box {
+            margin-top: 8px;
+            font-size: 11.5px;
+            color: var(--text2);
+            border-top: 1px dashed var(--border2);
+            padding-top: 8px;
+        }
+        .next-reward-box strong {
+            color: var(--text);
+        }
     </style>
 </head>
 
@@ -541,6 +619,24 @@
             </div>
         </div>
 
+        <div class="progress-section">
+            <div class="progress-labels">
+                <span style="font-size:13px; font-weight:600;">ความคืบหน้ารางวัล</span>
+                <span id="progress-text" style="font-size:12px; font-weight:600; color:#00838f;">0 / 500,000</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-fill" id="progress-fill"></div>
+                <div class="progress-markers" id="progress-markers"></div>
+            </div>
+            <div class="reward-summary-box">
+                <div style="font-size:12px; font-weight:600; margin-bottom:6px;">🎁 รางวัลสะสมที่ได้รับแล้วทั้งหมด:</div>
+                <div id="reward-list">
+                    <span style="font-size:11.5px; color:var(--text3);">ยังไม่ถึงเป้าหมายแรก (5,000 แต้ม)</span>
+                </div>
+                <div class="next-reward-box" id="next-reward">
+                    </div>
+            </div>
+        </div>
         <div class="note1">
             <strong>หมายเหตุTop:</strong> กิลด์บริจาคได้วันละ 12 ครั้ง 5500 แต้ม / ปราบกิลด์ 3 ครั้ง / ฟาร์มเคออส 8
             ครั้ง / ปราบผู้นำ 7 ครั้ง / ทดสอบทีม 20 ครั้ง / อารีน่า 113 ครั้ง / โดม 10 ครั้ง
@@ -566,6 +662,90 @@
     </div>
 
     <script>
+        // =========================================================
+        // ข้อมูลของรางวัลแต่ละเป้าหมาย (ที่เพิ่มเข้ามาใหม่)
+        // =========================================================
+        const rewardMilestones = [
+            { score: 5000, rewards: { "เคออส": 500, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 10000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 50, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 15000, rewards: { "กุญแจเวท": 5, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 25000, rewards: { "เคออส": 1000, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 30000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 100, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 40000, rewards: { "กุญแจเวท": 15, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 50000, rewards: { "เคออส": 1500, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 65000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 150, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 80000, rewards: { "กล่องสมุนตำนาน": 1, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 100000, rewards: { "เคออส": 2000, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 120000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 200, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 150000, rewards: { "หีบเลือกสมุนแฟรี่": 1, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+            { score: 180000, rewards: { "ถุงโชคเหรียญทองมืด": 2, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 210000, rewards: { "กุญแจเงิน": 30, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 250000, rewards: { "หินปลุก": 3, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+            { score: 300000, rewards: { "ถุงโชคเหรียญทองมืด": 2, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 400000, rewards: { "กุญแจทอง": 15, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 500000, rewards: { "หินปลุก": 3, "แพ็คเลือกปราช": 1, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+        ];
+
+        // สร้างจุด Markers ลงบนหลอด Progress Bar
+        function initProgressMarkers() {
+            const container = document.getElementById("progress-markers");
+            container.innerHTML = "";
+            const maxScore = 500000;
+            rewardMilestones.forEach(m => {
+                const marker = document.createElement("div");
+                marker.className = "marker";
+                marker.style.left = (m.score / maxScore * 100) + "%";
+                container.appendChild(marker);
+            });
+        }
+
+        // ฟังก์ชันคำนวณและอัปเดตของรางวัลสะสม
+        function updateRewards(currentScore) {
+            const MAX_SCORE = 500000;
+            const pct = Math.min((currentScore / MAX_SCORE) * 100, 100);
+            
+            // อัปเดตหลอดกราฟิก
+            document.getElementById("progress-fill").style.width = pct + "%";
+            document.getElementById("progress-text").textContent = fmt(currentScore) + " / " + fmt(MAX_SCORE);
+
+            let accumulatedRewards = {};
+            let nextMilestone = null;
+
+            // รวมของรางวัลที่ผ่านเกณฑ์แล้ว
+            rewardMilestones.forEach(m => {
+                if (currentScore >= m.score) {
+                    for (const [itemName, qty] of Object.entries(m.rewards)) {
+                        accumulatedRewards[itemName] = (accumulatedRewards[itemName] || 0) + qty;
+                    }
+                } else {
+                    if (!nextMilestone) nextMilestone = m;
+                }
+            });
+
+            // แสดงของรางวัลรวม
+            const listEl = document.getElementById("reward-list");
+            if (Object.keys(accumulatedRewards).length === 0) {
+                listEl.innerHTML = `<span style="font-size:11.5px; color:var(--text3);">ยังไม่ถึงเป้าหมายแรก (5,000 แต้ม)</span>`;
+            } else {
+                let html = "";
+                for (const [itemName, totalQty] of Object.entries(accumulatedRewards)) {
+                    html += `<div class="reward-item">${itemName} <span>x${fmt(totalQty)}</span></div>`;
+                }
+                listEl.innerHTML = html;
+            }
+
+            // แสดงเป้าหมายต่อไป
+            const nextEl = document.getElementById("next-reward");
+            if (nextMilestone) {
+                let nextRewardsText = Object.entries(nextMilestone.rewards)
+                    .map(([k, v]) => `${k} x${fmt(v)}`).join(", ");
+                nextEl.innerHTML = `🎯 เป้าหมายต่อไป <strong>${fmt(nextMilestone.score)} แต้ม</strong> จะได้รับ: ${nextRewardsText}`;
+            } else {
+                nextEl.innerHTML = `🎉 สุดยอด! คุณปลดล็อครางวัลครบทุกเป้าหมายแล้ว`;
+            }
+        }
+        // =========================================================
+
         const daysData = [
             {
                 id: "tue", name: "อังคาร", cls: "hd-tue", items: [
@@ -715,6 +895,9 @@
             document.getElementById("grand-total").textContent = fmt(grand);
             const active = daysData.filter(d => getDayTotal(d) > 0).map(d => d.name).join(", ");
             document.getElementById("active-days").textContent = active ? "วันที่บันทึก: " + active : "ยังไม่ได้กรอกข้อมูล";
+            
+            // เรียกใช้อัปเดตรางวัลตรงนี้
+            updateRewards(grand);
         }
 
         function updateItem(key, dayId) {
@@ -873,6 +1056,7 @@
     <div class="items-list">${rows}</div>`;
                 grid.appendChild(card);
             });
+            
             updateSummary();
         }
 
@@ -896,6 +1080,7 @@
 
         // เริ่มต้นระบบ
         loadFromStorage();
+        initProgressMarkers();
         updateProfileDropdown();
         render();
     </script>
