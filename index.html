@@ -6,12 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ตารางคำนวณคะแนนรายวัน</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- สคริปต์หลักสำหรับประมวลผลภาพและข้อความ -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -214,10 +212,9 @@
             font-weight: 600;
             margin-bottom: 10px;
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 8px;
         }
-        @media(min-width:600px) { .scan-title { flex-direction: row; align-items: center; } }
         .scan-status-badge {
             font-size: 10px;
             font-weight: 500;
@@ -226,7 +223,6 @@
             background: var(--surface2);
             color: var(--text3);
             border: 1px solid var(--border);
-            width: fit-content;
         }
         .scan-status-badge.ready { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
         .scan-status-badge.loading { background: #fff8e1; color: #f9a825; border-color: #ffe082; }
@@ -373,6 +369,11 @@
             color: var(--text3);
             margin-left: 4px;
         }
+        .detection-card-confidence {
+            font-size: 10px;
+            color: #00838f;
+            margin-top: 3px;
+        }
         .detection-card.not-found {
             opacity: 0.45;
         }
@@ -383,7 +384,7 @@
         .scan-log {
             margin-top: 10px;
             font-size: 11px;
-            color: var(--text2);
+            color: var(--text3);
             background: var(--bg);
             border-radius: var(--radius-sm);
             padding: 8px 12px;
@@ -418,7 +419,6 @@
             </div>
         </div>
 
-        <!-- ฝั่ง Profile -->
         <div class="profile-section">
             <div class="profile-row" style="flex: 1;">
                 <span style="font-size:13px; font-weight:600; white-space:nowrap;">โปรไฟล์:</span>
@@ -448,7 +448,6 @@
             </div>
         </div>
 
-        <!-- ป้ายคะแนน -->
         <div class="banner">
             <div>
                 <div class="banner-label">คะแนนรวมทั้งหมด</div>
@@ -459,7 +458,6 @@
             </div>
         </div>
 
-        <!-- แถบรางวัล -->
         <div class="progress-section">
             <div class="progress-labels">
                 <span style="font-size:13px; font-weight:600;">ความคืบหน้ารางวัล</span>
@@ -483,7 +481,7 @@
              ========================================================= -->
         <div class="scan-section">
             <div class="scan-title">
-                <div>🔍 สแกนภาพและอ่านจำนวนอัตโนมัติ (OpenCV + OCR)</div>
+                🔍 สแกนภาพอัตโนมัติ (Template Matching)
                 <span class="scan-status-badge loading" id="cv-status">กำลังโหลด OpenCV...</span>
             </div>
             <div class="upload-zone" id="upload-zone">
@@ -495,7 +493,7 @@
             <div class="scan-preview-wrap" id="scan-preview-wrap">
                 <img id="scan-preview-img" class="scan-preview-img" src="" alt="Preview">
                 <button class="btn btn-scan" id="btn-do-scan" onclick="doScan()" disabled>
-                    🔍 เริ่มสแกนหาไอเทมและอ่านจำนวนจริง
+                    🔍 เริ่มสแกนหาไอเทม
                 </button>
                 <div class="scan-progress-bar" id="scan-progress-bar">
                     <div class="scan-progress-fill" id="scan-progress-fill"></div>
@@ -503,14 +501,13 @@
             </div>
 
             <div class="detection-results" id="detection-results">
-                <div class="detection-results-title">📦 ผลการตรวจจับและจำนวนที่อ่านได้</div>
+                <div class="detection-results-title">📦 ผลการตรวจจับ — แก้ไขจำนวนได้</div>
                 <div class="detection-grid" id="detection-grid"></div>
             </div>
 
             <div class="scan-log" id="scan-log"></div>
         </div>
 
-        <!-- หมายเหตุประจำวัน -->
         <div class="note1">
             <strong>หมายเหตุTop:</strong> กิลด์บริจาคได้วันละ 12 ครั้ง 5500 แต้ม / ปราบกิลด์ 3 ครั้ง / ฟาร์มเคออส 8 ครั้ง / ปราบผู้นำ 7 ครั้ง / ทดสอบทีม 20 ครั้ง / อารีน่า 113 ครั้ง / โดม 10 ครั้ง
             <div class="daily-cb-group">
@@ -543,27 +540,17 @@
 
     </div>
 
-    <!-- ส่วนจำลองฟังก์ชัน Mock เพื่อให้โค้ดทำงานเดี่ยวได้ราบรื่น -->
     <script>
-        // Mock data structure เพื่อให้หน้าเว็บ Render ได้ไม่พังตอนโหลด
-        let profiles = { "Default": {} };
-        let currentProfile = "Default";
-        function resetAll() { alert('รีเซ็ตแต้มเรียบร้อย'); }
-        function downloadHTML() { alert('สำรองไฟล์เรียบร้อย'); }
-        function switchProfile(val) {}
-        function deleteProfile() {}
-        function createNewProfile() {}
-        function exportProfilesJSON() {}
-        function importProfilesJSON(e) {}
-        function toggleAllDaily(c) {}
-        function toggleDayDaily(d, c) {}
-
         // =========================================================
-        // Template Matching & OCR Logic
+        // Template Matching — ตั้งค่า Templates จาก GitHub
         // =========================================================
 
-        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
+        // BASE URL ของรูป Template บน GitHub (raw)
+        // เปลี่ยน <USERNAME> และ <REPO> ให้ตรงกับของคุณ
+        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/<USERNAME>/<REPO>/main/";
 
+        // รายการ Template ทั้งหมด: { file, name, matchLabel }
+        // matchLabel คือชื่อที่จะแสดงในการ์ด (อาจต่างจากชื่อใน daysData)
         const templateDefs = [
             { file: "BlessingRoy.JPG",    name: "คุ้มครองลอย" },
             { file: "CrystalRed.JPG",     name: "ส่งคริสตัล 10 เม็ด" },
@@ -575,15 +562,16 @@
             { file: "Rune.JPG",            name: "อัญเชิญรูน" },
         ];
 
-        let loadedTemplates = {}; 
+        // เก็บ HTMLImageElement ของ template ที่โหลดมาแล้ว
+        let loadedTemplates = {}; // { file: HTMLImageElement }
         let cvReady = false;
         let scanImageElement = null;
-        let detectionCounts = {}; 
+        let detectionCounts = {}; // { file: number }
 
         function onOpenCvReady() {
             cvReady = true;
             const badge = document.getElementById("cv-status");
-            badge.textContent = "OpenCV และ OCR พร้อมใช้งาน";
+            badge.textContent = "OpenCV พร้อม";
             badge.className = "scan-status-badge ready";
             preloadTemplates();
         }
@@ -614,7 +602,7 @@
             await Promise.all(promises);
 
             if (loaded > 0) {
-                badge.textContent = `✓ Templates และ OCR พร้อมทำงาน (${loaded}/${templateDefs.length})`;
+                badge.textContent = `✓ Templates โหลดแล้ว ${loaded}/${templateDefs.length}`;
                 badge.className = "scan-status-badge ready";
             } else {
                 badge.textContent = "⚠ โหลด Templates ไม่ได้ — ตรวจสอบ URL";
@@ -643,32 +631,133 @@
             reader.readAsDataURL(file);
         }
 
-        // ฟังก์ชันช่วยทำ OCR แปลงรูปภาพบริเวณตัวเลขให้กลายเป็น String ข้อความจริง ๆ
-        async function recognizeNumberFromCrop(canvasCrop) {
-            try {
-                const result = await Tesseract.recognize(canvasCrop, 'eng', {
-                    tessedit_char_whitelist: '0123456789', // บังคับให้อ่านเฉพาะตัวเลขเท่านั้นเพื่อความแม่นยำ
-                    tessedit_pageseg_mode: '10' // มองว่าภาพนี้คืออักขระเดี่ยวหรือคำสั้นๆ คำเดียว
-                });
-                
-                // คลีนช่องว่างและดึงเฉพาะตัวเลขออกมา
-                let cleanText = result.data.text.replace(/[^0-9]/g, '');
-                let countNum = parseInt(cleanText, 10);
-                
-                return isNaN(countNum) ? 1 : countNum; // หากอ่านไม่ได้ค่า หรือเป็นช่องว่าง ให้ Default เป็น 1
-            } catch (err) {
-                console.error("OCR Error: ", err);
-                return 1;
-            }
+        // =========================================================
+        // Tesseract worker (สร้างครั้งเดียว)
+        // =========================================================
+        let ocrWorker = null;
+        async function getOcrWorker() {
+            if (ocrWorker) return ocrWorker;
+            ocrWorker = await Tesseract.createWorker('eng', 1, { logger: () => {} });
+            await ocrWorker.setParameters({
+                tessedit_char_whitelist: '0123456789,./KkMm ',
+                tessedit_pageseg_mode: '7',  // single line
+            });
+            return ocrWorker;
         }
 
-        // ฟังก์ชันหลัก: ค้นหาพิกัดไอเทมด้วย OpenCV -> ตัดส่วนตัวเลข -> อ่านด้วย Tesseract.js
+        // แปลง text → number รองรับ 1,234 / 1.2K / 1M
+        function parseOcrNumber(text) {
+            const clean = text.replace(/\s/g, '').replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
+            const km = clean.match(/(\d[\d,.]*)([KkMm])/);
+            if (km) {
+                const base = parseFloat(km[1].replace(/,/g, ''));
+                return Math.round(base * (km[2].toLowerCase() === 'k' ? 1000 : 1000000));
+            }
+            const nums = clean.match(/\d[\d,]*/g);
+            if (nums && nums.length > 0) {
+                return parseInt(nums.sort((a, b) => b.length - a.length)[0].replace(/,/g, ''), 10) || 0;
+            }
+            return 0;
+        }
+
+        // ทำ OCR บน canvas หนึ่งอัน
+        async function ocrCanvas(canvas) {
+            try {
+                const worker = await getOcrWorker();
+                const { data: { text } } = await worker.recognize(canvas);
+                return parseOcrNumber(text);
+            } catch(e) { return 0; }
+        }
+
+        // สร้าง canvas crop จาก srcCanvas ที่ (rx,ry,rw,rh) แล้ว preprocess หลายแบบ
+        function makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode) {
+            const SCALE = 4; // scale up 4x เพื่อความชัด
+            const c = document.createElement('canvas');
+            c.width  = rw * SCALE;
+            c.height = rh * SCALE;
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(srcCanvas, rx, ry, rw, rh, 0, 0, c.width, c.height);
+
+            const imgData = ctx.getImageData(0, 0, c.width, c.height);
+            const d = imgData.data;
+
+            if (mode === 'dark_bg') {
+                // ตัวเลขสีขาว/เหลืองบนพื้นมืด → invert แล้ว threshold
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                    const v = g > 160 ? 0 : 255; // ตัวสว่าง→ดำ, พื้นมืด→ขาว
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else if (mode === 'light_bg') {
+                // ตัวเลขสีเข้มบนพื้นขาว → threshold ตรง
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                    const v = g < 128 ? 0 : 255;
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else if (mode === 'yellow') {
+                // ดึงเฉพาะ channel สีเหลือง (R สูง, G สูง, B ต่ำ)
+                for (let i = 0; i < d.length; i += 4) {
+                    const isYellow = d[i] > 150 && d[i+1] > 120 && d[i+2] < 100;
+                    const v = isYellow ? 0 : 255;
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else {
+                // raw grayscale
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
+                    d[i] = d[i+1] = d[i+2] = g;
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            return c;
+        }
+
+        // OCR บริเวณรอบๆ icon หลายตำแหน่ง + หลาย mode
+        async function ocrAroundMatch(srcCanvas, matchX, matchY, tmplW, tmplH) {
+            const W = srcCanvas.width, H = srcCanvas.height;
+
+            // กำหนดพื้นที่ค้นหาตัวเลขรอบๆ icon
+            const pw = tmplW, ph = tmplH;
+            const regions = [
+                // ใต้ icon (ตัวเลขมักอยู่ใต้ไอคอน)
+                { x: matchX - Math.round(pw*0.3), y: matchY + ph,               w: pw + Math.round(pw*0.6), h: Math.round(ph*0.8) },
+                // มุมขวาล่าง (badge จำนวนเล็ก)
+                { x: matchX + Math.round(pw*0.4), y: matchY + Math.round(ph*0.5), w: Math.round(pw*0.9),     h: Math.round(ph*0.6) },
+                // ขวาของ icon
+                { x: matchX + pw,                 y: matchY,                     w: Math.round(pw*1.5),      h: ph },
+                // ทั้ง icon + ใต้ icon (crop กว้างๆ)
+                { x: matchX - Math.round(pw*0.2), y: matchY,                     w: pw + Math.round(pw*0.4), h: ph + Math.round(ph*0.9) },
+                // บน icon (บางเกมแสดงเลขด้านบน)
+                { x: matchX - Math.round(pw*0.2), y: matchY - Math.round(ph*0.5), w: pw + Math.round(pw*0.4), h: Math.round(ph*0.6) },
+            ];
+
+            const modes = ['dark_bg', 'yellow', 'light_bg', 'raw'];
+
+            for (const reg of regions) {
+                const rx = Math.max(0, reg.x), ry = Math.max(0, reg.y);
+                const rw = Math.min(reg.w, W - rx), rh = Math.min(reg.h, H - ry);
+                if (rw < 6 || rh < 6) continue;
+
+                for (const mode of modes) {
+                    const crop = makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode);
+                    const num = await ocrCanvas(crop);
+                    if (num > 0 && num < 10000000) return num; // sanity check
+                }
+            }
+            return 0;
+        }
+
+        // =========================================================
+        // ฟังก์ชัน Template Matching หลัก + OCR
+        // =========================================================
         async function doScan() {
             if (!cvReady || !scanImageElement) return;
 
             const btn = document.getElementById("btn-do-scan");
             btn.disabled = true;
-            btn.textContent = "⏳ กำลังสแกนภาพและคำนวณจำนวนไอเทมด้วย AI...";
+            btn.textContent = "⏳ กำลังสแกน...";
 
             const progressBar = document.getElementById("scan-progress-bar");
             const progressFill = document.getElementById("scan-progress-fill");
@@ -676,158 +765,610 @@
             progressFill.style.width = "0%";
 
             detectionCounts = {};
+
+            // วาดภาพใหญ่ลง canvas
+            const srcCanvas = document.createElement("canvas");
+            srcCanvas.width = scanImageElement.naturalWidth;
+            srcCanvas.height = scanImageElement.naturalHeight;
+            const srcCtx = srcCanvas.getContext("2d");
+            srcCtx.drawImage(scanImageElement, 0, 0);
+
+            // โหลด OCR worker ล่วงหน้า
+            btn.textContent = "⏳ โหลด OCR...";
+            await getOcrWorker();
+
             let logLines = [];
             const total = templateDefs.length;
 
-            // นำภาพใหญ่เข้าขบวนการ OpenCV
-            let srcMat = cv.imread(scanImageElement);
-            let srcGray = new cv.Mat();
-            cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY, 0);
-
-            const gridContainer = document.getElementById("detection-grid");
-            gridContainer.innerHTML = "";
-
             for (let ti = 0; ti < total; ti++) {
                 const tDef = templateDefs[ti];
-                progressFill.style.width = ((ti / total) * 100) + "%";
-                await new Promise(r => setTimeout(r, 30)); // ยอมให้ UI อัปเดตสถานะแถบดาวน์โหลด
+                const pct = Math.round((ti / total) * 100);
+                progressFill.style.width = pct + "%";
+                btn.textContent = `⏳ สแกน ${ti+1}/${total}: ${tDef.name}`;
+
+                await new Promise(r => setTimeout(r, 10));
 
                 const tmplImg = loadedTemplates[tDef.file];
                 if (!tmplImg) {
-                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่พบไฟล์เทมเพลต</span>`);
+                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่มี template</span>`);
                     detectionCounts[tDef.file] = 0;
-                    renderDetectionCard(tDef, 0, false);
                     continue;
                 }
 
-                // นำรูปเทมเพลตไอเทมเข้า OpenCV
-                let templMat = cv.imread(tmplImg);
-                let templGray = new cv.Mat();
-                cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY, 0);
+                const tmplCanvas = document.createElement("canvas");
+                tmplCanvas.width = tmplImg.naturalWidth;
+                tmplCanvas.height = tmplImg.naturalHeight;
+                tmplCanvas.getContext("2d").drawImage(tmplImg, 0, 0);
 
-                let resultMat = new cv.Mat();
-                cv.matchTemplate(srcGray, templGray, resultMat, cv.TM_CCOEFF_NORMED);
-                
-                // หาค่าพิกัดจุดที่เหมือนที่สุดในรูปใหญ่
-                let minMax = cv.minMaxLoc(resultMat);
-                let maxConfidence = minMax.maxVal; // ค่าความถูกต้อง 0.0 - 1.0
-                let maxLoc = minMax.maxLoc;
+                const THRESHOLD = 0.72;
+                let bestVal = -Infinity;
+                // เก็บทุก match position ของ scale ที่ดีที่สุด
+                let bestMatches = []; // [{x, y, w, h, val}]
+                let bestScaleW = 0, bestScaleH = 0;
 
-                // กำหนด Threshold ความแม่นยำ (เช่น เกิน 75% ถือว่าเจอไอเทมนั้นจริง)
-                if (maxConfidence >= 0.75) {
-                    let itemWidth = templGray.cols;
-                    let itemHeight = templGray.rows;
+                try {
+                    const src = cv.imread(srcCanvas);
+                    const tmpl = cv.imread(tmplCanvas);
+                    const scales = [0.5, 0.75, 1.0, 1.25, 1.5];
 
-                    // --- [ขั้นตอนสำคัญ] ครอปรูปมุมขวาล่างของตัวไอเทมเพื่อส่งให้อ่านค่าตัวเลข ---
-                    const cropCanvas = document.createElement("canvas");
-                    // ขยายขอบเขตการสแกนรอบกล่องมุมขวาล่างเล็กน้อยเพื่อเก็บเลขจำนวนเต็มๆ
-                    cropCanvas.width = Math.floor(itemWidth * 0.6); 
-                    cropCanvas.height = Math.floor(itemHeight * 0.4);
-                    const cropCtx = cropCanvas.getContext("2d");
+                    for (const scale of scales) {
+                        const tw = Math.round(tmplImg.naturalWidth * scale);
+                        const th = Math.round(tmplImg.naturalHeight * scale);
+                        if (tw < 8 || th < 8 || tw > srcCanvas.width || th > srcCanvas.height) continue;
 
-                    // ทำการตัดพิกัด (X, Y) จากรูปใหญ่บริเวณขอบล่างของกล่องไอเทม
-                    let cropStartX = maxLoc.x + Math.floor(itemWidth * 0.45);
-                    let cropStartY = maxLoc.y + Math.floor(itemHeight * 0.6);
+                        const tmplResized = new cv.Mat();
+                        cv.resize(tmpl, tmplResized, new cv.Size(tw, th));
 
-                    cropCtx.drawImage(
-                        scanImageElement,
-                        cropStartX, cropStartY, cropCanvas.width, cropCanvas.height, // พิกัดต้นฉบับ
-                        0, 0, cropCanvas.width, cropCanvas.height // ลงแคนวาสใหม่
-                    );
+                        const result = new cv.Mat();
+                        cv.matchTemplate(src, tmplResized, result, cv.TM_CCOEFF_NORMED);
 
-                    // ยกระดับภาพสีขาวดำ (Thresholding เผื่อปรับความคมชัดให้ OCR อ่านง่ายขึ้น)
-                    let cropMat = cv.imread(cropCanvas);
-                    let cropGray = new cv.Mat();
-                    cv.cvtColor(cropMat, cropGray, cv.COLOR_RGBA2GRAY, 0);
-                    cv.threshold(cropGray, cropGray, 180, 255, cv.THRESH_BINARY_INV); // แปลงพื้นเป็นขาวตัวอักษรดำช่วย Tesseract
-                    cv.imshow(cropCanvas, cropGray);
+                        const { maxVal } = cv.minMaxLoc(result);
+                        const matches = getMatchPositions(result, THRESHOLD, tw, th);
 
-                    // เรียกใช้ OCR อ่านข้อความตัวเลขจากชิ้นส่วนที่ตัดมา
-                    let detectedQuantity = await recognizeNumberFromCrop(cropCanvas);
+                        if (maxVal > bestVal) {
+                            bestVal = maxVal;
+                            bestMatches = matches.map(m => ({ ...m, w: tw, h: th }));
+                            bestScaleW = tw;
+                            bestScaleH = th;
+                        }
 
-                    logLines.push(`<span class="log-found">✓พบ ${tDef.name} จำนวนความแม่นยำ ${(maxConfidence*100).toFixed(1)}% -> อ่านค่าจำนวนได้ [ ${detectedQuantity} ]</span>`);
-                    detectionCounts[tDef.file] = detectedQuantity;
-                    
-                    renderDetectionCard(tDef, detectedQuantity, true, maxConfidence);
+                        tmplResized.delete();
+                        result.delete();
+                    }
 
-                    cropMat.delete(); cropGray.delete();
-                } else {
-                    logLines.push(`<span class="log-notfound">✗ ไม่พบ ${tDef.name} (ความเหมือนต่ำกว่าเกณฑ์)</span>`);
-                    detectionCounts[tDef.file] = 0;
-                    renderDetectionCard(tDef, 0, false);
+                    src.delete();
+                    tmpl.delete();
+
+                } catch (err) {
+                    console.error("Template matching error:", tDef.file, err);
                 }
 
-                // เคลียร์หน่วยความจำ OpenCV ป้องกันแรมรั่ว
-                templMat.delete(); templGray.delete(); resultMat.delete();
+                if (bestMatches.length === 0) {
+                    detectionCounts[tDef.file] = 0;
+                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่พบในภาพ</span>`);
+                    continue;
+                }
+
+                // อ่านตัวเลขจากตำแหน่ง match แรก (ที่ confidence สูงสุด)
+                btn.textContent = `🔢 OCR: ${tDef.name}`;
+                await new Promise(r => setTimeout(r, 5));
+
+                const best = bestMatches[0];
+                let ocrNum = await ocrAroundMatch(srcCanvas, best.x, best.y, best.w, best.h);
+
+                // ถ้า OCR ไม่ได้ตัวเลข ใช้จำนวน match แทน
+                const finalCount = ocrNum > 0 ? ocrNum : bestMatches.length;
+                detectionCounts[tDef.file] = finalCount;
+
+                const ocrNote = ocrNum > 0
+                    ? `📖 OCR อ่านได้: <strong>${finalCount.toLocaleString()}</strong>`
+                    : `🔢 พบไอคอน ${bestMatches.length} จุด (OCR ไม่ได้เลข)`;
+
+                logLines.push(`<span class="log-found">✓ ${tDef.name} — ${ocrNote} (conf: ${(bestVal*100).toFixed(1)}%)</span>`);
             }
 
-            // ทำความสะอาด Mat หลัก
-            srcMat.delete(); srcGray.delete();
-
-            // แสดงรายงานผล
             progressFill.style.width = "100%";
-            setTimeout(() => { progressBar.classList.remove("show"); }, 400);
-
-            btn.disabled = false;
-            btn.textContent = "🔍 เริ่มสแกนหาไอเทม";
-
-            const logDiv = document.getElementById("scan-log");
-            logDiv.innerHTML = logLines.join("<br>");
-            logDiv.classList.add("show");
+            renderDetectionCards();
+            document.getElementById("scan-log").innerHTML = logLines.join("<br>");
+            document.getElementById("scan-log").classList.add("show");
             document.getElementById("detection-results").classList.add("show");
 
-            // ทำการบันทึกหรือลิงก์เข้าสู่ฟังก์ชันตารางหลักของคุณ
-            applyScannedToGrid();
+            btn.disabled = false;
+            btn.textContent = "🔍 สแกนอีกครั้ง";
         }
 
-        function renderDetectionCard(tDef, count, isFound, confidence = 0) {
-            const gridContainer = document.getElementById("detection-grid");
-            const card = document.createElement("div");
-            card.className = `detection-card ${isFound ? '' : 'not-found'}`;
+        // คืน array ของตำแหน่ง match (พร้อม NMS)
+        function getMatchPositions(resultMat, threshold, tmplW, tmplH) {
+            const data = resultMat.data32F;
+            const cols = resultMat.cols;
+            const rows = resultMat.rows;
+            const visited = new Uint8Array(cols * rows);
+            const minDist = Math.max(tmplW, tmplH) * 0.5;
+            const candidates = [];
 
-            const imgSrc = GITHUB_RAW_BASE + tDef.file;
-            const confText = isFound ? `<div class="detection-card-confidence">สแกนเจอ ${(confidence*100).toFixed(0)}%</div>` : '';
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const val = data[r * cols + c];
+                    if (val >= threshold) candidates.push({ r, c, val });
+                }
+            }
+            candidates.sort((a, b) => b.val - a.val);
 
-            card.innerHTML = `
-                <img class="detection-card-img" src="${imgSrc}" alt="${tDef.name}">
-                <div class="detection-card-body">
-                    <div class="detection-card-name">${tDef.name}</div>
-                    <div class="detection-card-count-row">
-                        <button class="btn-c" onclick="changeDetectCount('${tDef.file}', -1)">-</button>
-                        <input type="number" class="detection-card-count-input" id="input-detect-${tDef.file}" value="${count}" onchange="onDetectCountInputChange('${tDef.file}', this.value)">
-                        <button class="btn-c" onclick="changeDetectCount('${tDef.file}', 1)">+</button>
-                        <span class="detection-card-label">ชิ้น</span>
+            const results = [];
+            for (const pt of candidates) {
+                const idx = pt.r * cols + pt.c;
+                if (visited[idx]) continue;
+                results.push({ x: pt.c, y: pt.r, val: pt.val });
+                const r0 = Math.max(0, Math.round(pt.r - minDist));
+                const r1 = Math.min(rows - 1, Math.round(pt.r + minDist));
+                const c0 = Math.max(0, Math.round(pt.c - minDist));
+                const c1 = Math.min(cols - 1, Math.round(pt.c + minDist));
+                for (let rr = r0; rr <= r1; rr++)
+                    for (let cc = c0; cc <= c1; cc++)
+                        visited[rr * cols + cc] = 1;
+            }
+            return results;
+        }
+
+        // (compat alias เดิม)
+        function countMatches(resultMat, threshold, tmplW, tmplH) {
+            return getMatchPositions(resultMat, threshold, tmplW, tmplH).length;
+        }
+
+        // แสดง Cards ผลการตรวจจับ
+        function renderDetectionCards() {
+            const grid = document.getElementById("detection-grid");
+            grid.innerHTML = "";
+
+            templateDefs.forEach(tDef => {
+                const count = detectionCounts[tDef.file] || 0;
+                const imgSrc = loadedTemplates[tDef.file] ? loadedTemplates[tDef.file].src : "";
+
+                const card = document.createElement("div");
+                card.className = "detection-card" + (count === 0 ? " not-found" : "");
+                card.id = "dcard_" + tDef.file.replace(/\./g, "_");
+
+                card.innerHTML = `
+                    <img class="detection-card-img" src="${imgSrc}" alt="${tDef.name}" onerror="this.style.display='none'">
+                    <div class="detection-card-body">
+                        <div class="detection-card-name">${tDef.name}</div>
+                        <div class="detection-card-count-row">
+                            <button class="btn-c" onclick="changeDetection('${tDef.file}', -1)" aria-label="ลด">−</button>
+                            <input class="detection-card-count-input" 
+                                id="dcnt_${tDef.file.replace(/\./g,'_')}" 
+                                type="number" min="0" value="${count}"
+                                onchange="setDetection('${tDef.file}', parseInt(this.value)||0)"
+                                oninput="setDetection('${tDef.file}', parseInt(this.value)||0)">
+                            <button class="btn-c" onclick="changeDetection('${tDef.file}', 1)" aria-label="เพิ่ม">+</button>
+                            <span class="detection-card-label">ชิ้น</span>
+                        </div>
+                        <div class="detection-card-confidence" id="dconf_${tDef.file.replace(/\./g,'_')}">
+                            ${count > 0 ? `🟢 จำนวน: ${count.toLocaleString()} ชิ้น` : "⚪ ไม่พบในภาพ"}
+                        </div>
                     </div>
-                    ${confText}
-                </div>
-            `;
-            gridContainer.appendChild(card);
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        function changeDetectCount(file, offset) {
-            const input = document.getElementById(`input-detect-${file}`);
-            if (!input) return;
-            let val = parseInt(input.value, 10) || 0;
-            val += offset;
-            if (val < 0) val = 0;
-            input.value = val;
-            detectionCounts[file] = val;
-            applyScannedToGrid();
+        function changeDetection(file, delta) {
+            detectionCounts[file] = Math.max(0, (detectionCounts[file] || 0) + delta);
+            const id = "dcnt_" + file.replace(/\./g, "_");
+            const el = document.getElementById(id);
+            if (el) el.value = detectionCounts[file];
+            updateDetectionCardStyle(file);
         }
 
-        function onDetectCountInputChange(file, val) {
-            let num = parseInt(val, 10);
-            if (isNaN(num) || num < 0) num = 0;
-            detectionCounts[file] = num;
-            applyScannedToGrid();
+        function setDetection(file, val) {
+            detectionCounts[file] = Math.max(0, val);
+            updateDetectionCardStyle(file);
         }
 
-        // ส่งผ่านค่าที่สแกนสำเร็จจากภาพ (ที่แก้ไขจำนวนมือได้เพิ่มด้วย) เข้าไปที่แกนฟังก์ชันหลักของเว็บคุณ
-        function applyScannedToGrid() {
-            console.log("บันทึกค่าเข้าสากลเรียบร้อย:", detectionCounts);
-            // ส่วนนี้เมื่อโค้ดอยู่กับแอปตัวเต็ม สามารถใช้ผูกค่าวนลูปเอาไปเพิ่มใน `daysData` หรืออัปเดตแต้มรวมผ่าน `updateGrandTotal()` ได้เลยครับ
+        function updateDetectionCardStyle(file) {
+            const count = detectionCounts[file] || 0;
+            const cardId = "dcard_" + file.replace(/\./g, "_");
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.className = "detection-card" + (count === 0 ? " not-found" : "");
+            }
+            const confId = "dconf_" + file.replace(/\./g, "_");
+            const confEl = document.getElementById(confId);
+            if (confEl) {
+                confEl.textContent = count > 0 ? `🟢 จำนวน ${count} ชิ้น` : "⚪ ไม่พบในภาพ";
+            }
         }
+
+        // =========================================================
+        // Drag & Drop support
+        // =========================================================
+        const uploadZone = document.getElementById("upload-zone");
+        uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.style.borderColor = "#00838f"; });
+        uploadZone.addEventListener("dragleave", () => { uploadZone.style.borderColor = ""; });
+        uploadZone.addEventListener("drop", e => {
+            e.preventDefault();
+            uploadZone.style.borderColor = "";
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith("image/")) {
+                const fakeEvent = { target: { files: [file] } };
+                onScanImageSelected(fakeEvent);
+            }
+        });
+
+        // =========================================================
+        // Reward Milestones
+        // =========================================================
+        const rewardMilestones = [
+            { score: 5000, rewards: { "เคออส": 500, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 10000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 50, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 15000, rewards: { "กุญแจเวท": 5, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 25000, rewards: { "เคออส": 1000, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 30000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 100, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 40000, rewards: { "กุญแจเวท": 15, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 50000, rewards: { "เคออส": 1500, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 65000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 150, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 80000, rewards: { "กล่องสมุนตำนาน": 1, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 100000, rewards: { "เคออส": 2000, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 120000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 200, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 150000, rewards: { "หีบเลือกสมุนแฟรี่": 1, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+            { score: 180000, rewards: { "ถุงโชคเหรียญทองมืด": 2, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 210000, rewards: { "กุญแจเงิน": 30, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 250000, rewards: { "หินปลุก": 3, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+            { score: 300000, rewards: { "ถุงโชคเหรียญทองมืด": 2, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 400000, rewards: { "กุญแจทอง": 15, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 500000, rewards: { "หินปลุก": 3, "แพ็คเลือกปราช": 1, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+        ];
+
+        const dailyTargetValues = {
+            "ล็อคอิน": 1,
+            "ผ่านด่านฟาร์มเคออส 1 ครั้ง": 8,
+            "ฟาร์มการปราบผู้นำ 1 ครั้ง": 7,
+            "ผ่านด่านการทดสอบทีม 1 ครั้ง": 20,
+            "บริจาคกิลด์ 1 ครั้ง": 12,
+            "ทำการต่อรองราคากิลด์ 1 ครั้ง": 1,
+            "ฟาร์มการปราบกิลด์ 1 ครั้ง": 3,
+            "สงครามโดม 1 ครั้ง": 10,
+            "ชนะในสงครามโดม 1 ครั้ง": 10,
+            "ชนะอารีน่า 1 ครั้ง": 130,
+            "อารีน่า 1 ครั้ง": 130
+        };
+
+        function toggleAllDaily(isChecked) {
+            daysData.forEach(day => applyDailyToDay(day.id, isChecked));
+            saveToStorage(); render();
+        }
+        function toggleDayDaily(dayId, isChecked) {
+            applyDailyToDay(dayId, isChecked);
+            saveToStorage(); render();
+        }
+        function applyDailyToDay(dayId, isAdd) {
+            const counts = getCounts();
+            const day = daysData.find(d => d.id === dayId);
+            if (!day) return;
+            day.items.forEach((item, idx) => {
+                const key = day.id + "_" + idx;
+                if (dailyTargetValues[item.label] !== undefined)
+                    counts[key] = isAdd ? dailyTargetValues[item.label] : 0;
+            });
+        }
+        function updateCheckboxStates() {
+            const counts = getCounts();
+            const dayCbs = document.querySelectorAll('.cb-day');
+            let allChecked = true;
+            dayCbs.forEach(cb => {
+                const dayId = cb.value;
+                const day = daysData.find(d => d.id === dayId);
+                let hasDaily = false, matchesDaily = true;
+                day.items.forEach((item, idx) => {
+                    if (dailyTargetValues[item.label] !== undefined) {
+                        hasDaily = true;
+                        if ((counts[day.id + "_" + idx] || 0) !== dailyTargetValues[item.label]) matchesDaily = false;
+                    }
+                });
+                cb.checked = hasDaily && matchesDaily;
+                if (!cb.checked) allChecked = false;
+            });
+            const allCb = document.getElementById('cb-all-daily');
+            if (allCb) allCb.checked = allChecked && dayCbs.length > 0;
+        }
+
+        function initProgressMarkers() {
+            const container = document.getElementById("progress-markers");
+            container.innerHTML = "";
+            const totalSegments = rewardMilestones.length;
+            rewardMilestones.forEach((m, index) => {
+                const marker = document.createElement("div");
+                marker.className = "marker";
+                marker.style.left = ((index + 1) / totalSegments * 100) + "%";
+                const tooltip = document.createElement("div");
+                tooltip.className = "tooltip";
+                let rewardsHtml = Object.entries(m.rewards).map(([k,v]) => `${k} <span>x${fmt(v)}</span>`).join("<br>");
+                tooltip.innerHTML = `<span class="tooltip-score">🎯 ${fmt(m.score)} แต้ม</span>${rewardsHtml}`;
+                marker.appendChild(tooltip);
+                container.appendChild(marker);
+            });
+        }
+
+        function updateRewards(currentScore) {
+            const MAX_SCORE = 500000;
+            const stops = [0, ...rewardMilestones.map(m => m.score)];
+            let pct = 0;
+            if (currentScore >= MAX_SCORE) pct = 100;
+            else if (currentScore > 0) {
+                for (let i = 0; i < stops.length - 1; i++) {
+                    if (currentScore >= stops[i] && currentScore < stops[i+1]) {
+                        pct = ((i + (currentScore - stops[i]) / (stops[i+1] - stops[i])) / (stops.length - 1)) * 100;
+                        break;
+                    }
+                }
+            }
+            document.getElementById("progress-fill").style.width = pct + "%";
+            document.getElementById("progress-text").textContent = fmt(currentScore) + " / " + fmt(MAX_SCORE);
+            let accumulatedRewards = {}, nextMilestone = null;
+            rewardMilestones.forEach(m => {
+                if (currentScore >= m.score) {
+                    for (const [k, v] of Object.entries(m.rewards))
+                        accumulatedRewards[k] = (accumulatedRewards[k] || 0) + v;
+                } else if (!nextMilestone) nextMilestone = m;
+            });
+            const listEl = document.getElementById("reward-list");
+            if (Object.keys(accumulatedRewards).length === 0)
+                listEl.innerHTML = `<span style="font-size:11.5px; color:var(--text3);">ยังไม่ถึงเป้าหมายแรก (5,000 แต้ม)</span>`;
+            else
+                listEl.innerHTML = Object.entries(accumulatedRewards).map(([k, v]) => `<div class="reward-item">${k} <span>x${fmt(v)}</span></div>`).join("");
+            const nextEl = document.getElementById("next-reward");
+            if (nextMilestone)
+                nextEl.innerHTML = `🎯 เป้าหมายต่อไป <strong>${fmt(nextMilestone.score)} แต้ม</strong> จะได้รับ: ` + Object.entries(nextMilestone.rewards).map(([k,v]) => `${k} x${fmt(v)}`).join(", ");
+            else
+                nextEl.innerHTML = `🎉 สุดยอด! คุณปลดล็อครางวัลครบทุกเป้าหมายแล้ว`;
+        }
+
+        const daysData = [
+            { id:"tue", name:"อังคาร", cls:"hd-tue", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ผ่านด่านฟาร์มเคออส 1 ครั้ง",pts:600,color:"none"},
+                {label:"ฟาร์มการปราบผู้นำ 1 ครั้ง",pts:800,color:"none"},
+                {label:"อัญเชิญรูน 1 ครั้ง",pts:60,color:"yellow"},
+                {label:"โบราณคดีโบราณวัตถุ 1 ครั้ง",pts:80,color:"none"},
+                {label:"ส่งคริสตัล 10 เม็ด ให้กับปราชญ์",pts:10,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"wed", name:"พุธ", cls:"hd-wed", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ผ่านด่านการทดสอบทีม 1 ครั้ง",pts:800,color:"none"},
+                {label:"บริจาคกิลด์ 1 ครั้ง",pts:400,color:"none"},
+                {label:"ทำการต่อรองราคากิลด์ 1 ครั้ง",pts:1000,color:"orange"},
+                {label:"ฟาร์มการปราบกิลด์ 1 ครั้ง",pts:800,color:"none"},
+                {label:"ใช้เหรียญกิลด์ 1000 เหรียญ",pts:50,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"thu", name:"พฤหัส", cls:"hd-thu", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ใช้กุญแจเวท 1 อัน",pts:100,color:"yellow"},
+                {label:"ใช้การคุ้มครองลอย 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชั้น ",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานจากโนคอส 1 ชั้น",pts:2000,color:"none"},
+                {label:"ใช้แก่นพลังมืด 100ชิ้น",pts:80,color:"none"},
+                {label:"ใช้กุญแจทอง 1 ดอก",pts:500,color:"none"},
+                {label:"ใช้กุญแจเงิน 1 ดอก",pts:50,color:"yellow"},
+                {label:"เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"fri", name:"ศุกร์", cls:"hd-fri", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"อารีน่า 1 ครั้ง",pts:600,color:"none"},
+                {label:"ชนะอารีน่า 1 ครั้ง",pts:200,color:"none"},
+                {label:"สงครามโดม 1 ครั้ง",pts:1000,color:"none"},
+                {label:"ชนะในสงครามโดม 1 ครั้ง",pts:300,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"sat", name:"เสาร์", cls:"hd-sat", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ใช้กุญแจเวท 1 อัน",pts:100,color:"yellow"},
+                {label:"ใช้การคุ้มครองลอย 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชั้น ",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานจากโนคอส 1 ชั้น",pts:2000,color:"none"},
+                {label:"ใช้ยาวิญญาณเวท 1 ขวด",pts:20,color:"none"},
+                {label:"ใช้แก่นพลังมืด 100 ชิ้น",pts:80,color:"none"},
+                {label:"อัญเชิญรูน 1 ครั้ง",pts:60,color:"yellow"},
+                {label:"โบราณคดีโบราณวัตถุ 1 ครั้ง",pts:80,color:"none"},
+                {label:"ส่งคริสตัลพลัง 10 เม็ด ให้กับปริญญ์",pts:10,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"sun", name:"อาทิตย์", cls:"hd-sun", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ทำการต่อรองราคากิลด์ 1 ครั้ง",pts:1000,color:"orange"},
+                {label:"บริจาคกิลด์ 1 ครั้ง",pts:400,color:"none"},
+                {label:"ฟาร์มการปราบกิลด์ 1 ครั้ง",pts:800,color:"none"},
+                {label:"ต่อสู้ในสงครามโจมตีกิลด์ 1 ครั้ง",pts:10000,color:"orange"},
+                {label:"ได้รับดาว 1 ดวง ในโจมตีกิลด์",pts:4000,color:"none"},
+                {label:"ใช้เหรียญกิลด์ 1000 เหรียญ",pts:50,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+        ];
+
+        let appState = { currentProfile: "Default", profiles: { "Default": {} } };
+
+        function dotClass(c) {
+            if (c==="yellow") return "dot dot-yellow";
+            if (c==="orange") return "dot dot-orange";
+            if (c==="cyan")   return "dot dot-cyan";
+            if (c==="green")  return "dot dot-green";
+            return "dot dot-none";
+        }
+        function fmt(n) { return n.toLocaleString("th-TH") }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem("daily_score_app_data");
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                    if (!appState.profiles || !Object.keys(appState.profiles).length) appState.profiles = {"Default":{}};
+                    if (!appState.currentProfile || !appState.profiles[appState.currentProfile])
+                        appState.currentProfile = Object.keys(appState.profiles)[0];
+                } catch(e) { console.error(e); }
+            }
+        }
+        function saveToStorage() { localStorage.setItem("daily_score_app_data", JSON.stringify(appState)); }
+        function getCounts() { return appState.profiles[appState.currentProfile] || {}; }
+        function getGrand() {
+            let g = 0;
+            const c = getCounts();
+            daysData.forEach(d => d.items.forEach((it,i) => g += (c[d.id+"_"+i]||0)*it.pts));
+            return g;
+        }
+        function getDayTotal(day) {
+            let t = 0;
+            const c = getCounts();
+            day.items.forEach((_,i) => t += (c[day.id+"_"+i]||0)*day.items[i].pts);
+            return t;
+        }
+        function updateSummary() {
+            const grand = getGrand();
+            document.getElementById("grand-total").textContent = fmt(grand);
+            const active = daysData.filter(d=>getDayTotal(d)>0).map(d=>d.name).join(", ");
+            document.getElementById("active-days").textContent = active ? "วันที่บันทึก: "+active : "ยังไม่ได้กรอกข้อมูล";
+            updateRewards(grand);
+        }
+        function updateItem(key, dayId) {
+            const day = daysData.find(d=>d.id===dayId);
+            const idx = parseInt(key.split("_")[1]);
+            const counts = getCounts();
+            const sub = (counts[key]||0) * day.items[idx].pts;
+            const subEl = document.getElementById("sub_"+key);
+            if (subEl) { subEl.textContent = sub>0?fmt(sub):"—"; subEl.className="item-sub"+(sub>0?" sub-active":""); }
+            const cntEl = document.getElementById("cnt_"+key);
+            if (cntEl) cntEl.value = counts[key]||0;
+            document.getElementById("dtotal_"+dayId).textContent = fmt(getDayTotal(day))+" คะแนน";
+            updateSummary(); saveToStorage(); updateCheckboxStates();
+        }
+        function change(key, dayId, delta) {
+            const counts = getCounts();
+            counts[key] = Math.max(0, (counts[key]||0)+delta);
+            updateItem(key, dayId);
+        }
+        function handleInput(key, dayId) {
+            const v = parseInt(document.getElementById("cnt_"+key).value)||0;
+            const counts = getCounts();
+            counts[key] = Math.max(0,v);
+            document.getElementById("cnt_"+key).value = counts[key];
+            updateItem(key, dayId);
+        }
+        function updateProfileDropdown() {
+            const select = document.getElementById("profile-select");
+            select.innerHTML = "";
+            Object.keys(appState.profiles).forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p; opt.textContent = p;
+                if (p===appState.currentProfile) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+        function createNewProfile() {
+            const input = document.getElementById("new-profile-name");
+            const name = input.value.trim();
+            if (!name) return alert("กรุณากรอกชื่อโปรไฟล์");
+            if (appState.profiles[name]) return alert("มีโปรไฟล์ชื่อนี้อยู่แล้ว");
+            appState.profiles[name] = {}; appState.currentProfile = name; input.value = "";
+            saveToStorage(); updateProfileDropdown(); render();
+        }
+        function switchProfile(name) {
+            if (!appState.profiles[name]) return;
+            appState.currentProfile = name; saveToStorage(); render();
+        }
+        function deleteProfile() {
+            const name = appState.currentProfile;
+            if (Object.keys(appState.profiles).length<=1) return alert("ต้องมีอย่างน้อย 1 โปรไฟล์");
+            if (!confirm(`คุณต้องการลบโปรไฟล์ "${name}" ใช่หรือไม่?`)) return;
+            delete appState.profiles[name];
+            appState.currentProfile = Object.keys(appState.profiles)[0];
+            saveToStorage(); updateProfileDropdown(); render();
+        }
+        function exportProfilesJSON() {
+            const blob = new Blob([JSON.stringify(appState,null,2)],{type:"application/json;charset=utf-8"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob); a.download = "score_profiles_backup.json"; a.click();
+            URL.revokeObjectURL(a.href);
+        }
+        function importProfilesJSON(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.profiles && importedData.currentProfile) {
+                        if (confirm("การนำเข้าข้อมูลจะเขียนทับโปรไฟล์ปัจจุบัน คุณต้องการดำเนินการต่อใช่หรือไม่?")) {
+                            appState = importedData; saveToStorage(); loadFromStorage();
+                            updateProfileDropdown(); render();
+                            alert("นำเข้าข้อมูลโปรไฟล์สำเร็จแล้ว!");
+                        }
+                    } else alert("โครงสร้างไฟล์ข้อมูลไม่ถูกต้อง");
+                } catch(err) { alert("เกิดข้อผิดพลาดในการอ่านไฟล์"); }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+        function render() {
+            const grid = document.getElementById("days-grid");
+            grid.innerHTML = "";
+            const counts = getCounts();
+            daysData.forEach(day => {
+                const card = document.createElement("div");
+                card.className = "day-card";
+                let rows = "";
+                day.items.forEach((item, idx) => {
+                    const key = day.id+"_"+idx;
+                    if (!counts[key]) counts[key] = 0;
+                    const sub = counts[key]*item.pts;
+                    rows += `<div class="item-row">
+                        <div class="${dotClass(item.color)}"></div>
+                        <div class="item-main">
+                          <span class="item-label">${item.label}</span>
+                          <span class="item-pts">${fmt(item.pts)} แต้ม</span>
+                        </div>
+                        <div class="counter">
+                          <button class="btn-c" onclick="change('${key}','${day.id}',-1)">−</button>
+                          <input class="cnt-input" id="cnt_${key}" type="number" pattern="[0-9]*" inputmode="numeric" min="0" value="${counts[key]}"
+                            onchange="handleInput('${key}','${day.id}')" oninput="handleInput('${key}','${day.id}')">
+                          <button class="btn-c" onclick="change('${key}','${day.id}',1)">+</button>
+                        </div>
+                        <span class="item-sub${sub>0?' sub-active':''}" id="sub_${key}">${sub>0?fmt(sub):"—"}</span>
+                      </div>`;
+                });
+                const dt = getDayTotal(day);
+                card.innerHTML = `<div class="day-header ${day.cls}">
+                    <span class="day-name">${day.name}</span>
+                    <span class="day-total" id="dtotal_${day.id}">${fmt(dt)} คะแนน</span>
+                  </div>
+                  <div class="items-list">${rows}</div>`;
+                grid.appendChild(card);
+            });
+            updateCheckboxStates(); updateSummary();
+        }
+        function resetAll() {
+            if (!confirm("รีเซ็ตคะแนนของโปรไฟล์นี้ทั้งหมด?")) return;
+            const counts = getCounts();
+            Object.keys(counts).forEach(k => counts[k] = 0);
+            saveToStorage(); render();
+        }
+        function downloadHTML() {
+            const blob = new Blob([document.documentElement.outerHTML],{type:"text/html;charset=utf-8"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob); a.download = "daily_score_calculator.html"; a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // เริ่มต้น
+        loadFromStorage();
+        initProgressMarkers();
+        updateProfileDropdown();
+        render();
     </script>
 </body>
-
 </html>
