@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ตารางคำนวณคะแนนรายวัน</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
     <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
     <style>
@@ -128,16 +126,16 @@
         .item-main { grid-column: 2; display: flex; flex-direction: column; min-width: 0; }
         .item-label { font-size: 12px; color: var(--text); line-height: 1.3; word-break: break-word }
         .item-pts { font-size: 10px; color: var(--text3); font-variant-numeric: tabular-nums; margin-top: 1px }
-        .counter { display: flex; align-items: center; gap: 4px; grid-column: 3; justify-self: end }
+        .counter { display: flex; align-items: center; gap: 4px; grid-column: 3; justify-select: end }
         .btn-c {
-            width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 50%;
-            background: var(--surface2); cursor: pointer; font-size: 16px; line-height: 1;
+            width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 50%;
+            background: var(--surface2); cursor: pointer; font-size: 18px; line-height: 1;
             display: flex; align-items: center; justify-content: center;
             color: var(--text2); user-select: none;
         }
         .btn-c:active { background: var(--border); color: var(--text) }
         .cnt-input {
-            width: 42px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            width: 46px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius-sm);
             background: var(--surface2); text-align: center; font-size: 13px; font-weight: 600;
             color: var(--text); font-family: inherit; padding: 0; font-variant-numeric: tabular-nums;
             -moz-appearance: textfield;
@@ -251,18 +249,18 @@
         .scan-preview-wrap.show { display: block; }
         .scan-preview-img {
             max-width: 100%;
-            max-height: 300px;
+            max-height: 260px;
             border-radius: var(--radius-sm);
             border: 1px solid var(--border);
             display: block;
-            margin-bottom: 10px;
+            margin: 0 auto 10px;
         }
         .btn-scan {
             background: #00838f;
             color: #fff;
             border-color: #00838f;
             font-size: 13px;
-            padding: 10px 20px;
+            padding: 12px 20px;
             width: 100%;
             justify-content: center;
         }
@@ -282,7 +280,7 @@
             background: #00838f;
             border-radius: 3px;
             width: 0%;
-            transition: width 0.3s;
+            transition: width 0.2s;
         }
 
         /* Detection Result Cards */
@@ -301,7 +299,7 @@
         }
         .detection-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 10px;
         }
         .detection-card {
@@ -317,8 +315,8 @@
         }
         .detection-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .detection-card-img {
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             object-fit: contain;
             background: var(--bg);
             flex-shrink: 0;
@@ -343,13 +341,13 @@
             gap: 4px;
         }
         .detection-card-count-row .btn-c {
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             font-size: 14px;
         }
         .detection-card-count-input {
-            width: 36px;
-            height: 24px;
+            width: 44px;
+            height: 26px;
             border: 1px solid var(--border);
             border-radius: 6px;
             background: var(--surface2);
@@ -384,11 +382,13 @@
         .scan-log {
             margin-top: 10px;
             font-size: 11px;
-            color: var(--text3);
+            color: var(--text2);
             background: var(--bg);
             border-radius: var(--radius-sm);
             padding: 8px 12px;
             line-height: 1.8;
+            max-height: 150px;
+            overflow-y: auto;
             display: none;
         }
         .scan-log.show { display: block; }
@@ -396,10 +396,8 @@
         .log-notfound { color: #b71c1c; }
     </style>
 </head>
-
 <body>
     <div class="page">
-
         <div class="top-bar">
             <div class="page-title">ตารางคำนวณคะแนนรายวัน</div>
             <div class="top-actions">
@@ -476,24 +474,21 @@
             </div>
         </div>
 
-        <!-- =========================================================
-             Template Matching Section
-             ========================================================= -->
         <div class="scan-section">
             <div class="scan-title">
-                🔍 สแกนภาพอัตโนมัติ (Template Matching)
+                🔍 สแกนภาพอัตโนมัติ (Mobile Optimized)
                 <span class="scan-status-badge loading" id="cv-status">กำลังโหลด OpenCV...</span>
             </div>
             <div class="upload-zone" id="upload-zone">
                 <input type="file" id="scan-file-input" accept="image/*" onchange="onScanImageSelected(event)">
                 <div class="upload-zone-icon">📸</div>
                 <div class="upload-zone-text">อัปโหลดภาพ Screenshot ของคุณ</div>
-                <div class="upload-zone-sub">คลิก หรือ ลากไฟล์มาวาง · รองรับ JPG, PNG</div>
+                <div class="upload-zone-sub">รองรับไฟล์รูปภาพจากมือถือทุกรุ่น (JPG, PNG)</div>
             </div>
             <div class="scan-preview-wrap" id="scan-preview-wrap">
                 <img id="scan-preview-img" class="scan-preview-img" src="" alt="Preview">
                 <button class="btn btn-scan" id="btn-do-scan" onclick="doScan()" disabled>
-                    🔍 เริ่มสแกนหาไอเทม
+                    🔍 เริ่มสแกนและอ่านจำนวนไอเทม
                 </button>
                 <div class="scan-progress-bar" id="scan-progress-bar">
                     <div class="scan-progress-fill" id="scan-progress-fill"></div>
@@ -537,20 +532,12 @@
         <div class="note">
             <strong>หมายเหตุ:</strong> อัญเชิญรูน &amp; วัตถุโบราณ → อังคาร &amp; เสาร์เท่านั้น · ลงแคนลับ → พฤหัส &amp; เสาร์เท่านั้น · ใช้เหรียญกิลด์ → พุธ &amp; อาทิตย์ · ส่งคริสตัล → อังคาร &amp; เสาร์ · ใช้กุญแจทอง → พฤหัสเท่านั้น · อารีน่า → ศุกร์เท่านั้น (อาทิตย์คัดขึ้นได้)
         </div>
-
     </div>
 
     <script>
-        // =========================================================
-        // Template Matching — ตั้งค่า Templates จาก GitHub
-        // =========================================================
+        // แก้ไขดึงไฟล์ Template จาก GitHub Repository ของผู้ใช้งานโดยตรง
+        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
 
-        // BASE URL ของรูป Template บน GitHub (raw)
-        // เปลี่ยน <USERNAME> และ <REPO> ให้ตรงกับของคุณ
-        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongool/DailyGuildLootboxhero/main/";
-
-        // รายการ Template ทั้งหมด: { file, name, matchLabel }
-        // matchLabel คือชื่อที่จะแสดงในการ์ด (อาจต่างจากชื่อใน daysData)
         const templateDefs = [
             { file: "BlessingRoy.JPG",    name: "คุ้มครองลอย" },
             { file: "CrystalRed.JPG",     name: "ส่งคริสตัล 10 เม็ด" },
@@ -562,16 +549,16 @@
             { file: "Rune.JPG",            name: "อัญเชิญรูน" },
         ];
 
-        // เก็บ HTMLImageElement ของ template ที่โหลดมาแล้ว
-        let loadedTemplates = {}; // { file: HTMLImageElement }
+        let loadedTemplates = {};
         let cvReady = false;
         let scanImageElement = null;
-        let detectionCounts = {}; // { file: number }
+        let detectionCounts = {};
+        let ocrWorker = null;
 
         function onOpenCvReady() {
             cvReady = true;
             const badge = document.getElementById("cv-status");
-            badge.textContent = "OpenCV พร้อม";
+            badge.textContent = "OpenCV พร้อมใช้งาน";
             badge.className = "scan-status-badge ready";
             preloadTemplates();
         }
@@ -600,12 +587,11 @@
             });
 
             await Promise.all(promises);
-
             if (loaded > 0) {
-                badge.textContent = `✓ Templates โหลดแล้ว ${loaded}/${templateDefs.length}`;
+                badge.textContent = `✓ Templates พร้อมใช้งาน (${loaded}/${templateDefs.length})`;
                 badge.className = "scan-status-badge ready";
             } else {
-                badge.textContent = "⚠ โหลด Templates ไม่ได้ — ตรวจสอบ URL";
+                badge.textContent = "⚠ เกิดข้อผิดพลาดในการโหลด Templates";
                 badge.className = "scan-status-badge error";
             }
         }
@@ -619,8 +605,7 @@
                 const img = new Image();
                 img.onload = () => {
                     scanImageElement = img;
-                    const preview = document.getElementById("scan-preview-img");
-                    preview.src = e.target.result;
+                    document.getElementById("scan-preview-img").src = e.target.result;
                     document.getElementById("scan-preview-wrap").classList.add("show");
                     document.getElementById("btn-do-scan").disabled = !cvReady;
                     document.getElementById("detection-results").classList.remove("show");
@@ -631,291 +616,244 @@
             reader.readAsDataURL(file);
         }
 
-        // =========================================================
-        // Tesseract worker (สร้างครั้งเดียว)
-        // =========================================================
-        let ocrWorker = null;
         async function getOcrWorker() {
             if (ocrWorker) return ocrWorker;
             ocrWorker = await Tesseract.createWorker('eng', 1, { logger: () => {} });
             await ocrWorker.setParameters({
-                tessedit_char_whitelist: '0123456789,./KkMm ',
-                tessedit_pageseg_mode: '7',  // single line
+                tessedit_char_whitelist: '0123456789,KkMm.',
+                tessedit_pageseg_mode: '7', 
             });
             return ocrWorker;
         }
 
-        // แปลง text → number รองรับ 1,234 / 1.2K / 1M
         function parseOcrNumber(text) {
-            const clean = text.replace(/\s/g, '').replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
+            if (!text) return 0;
+            let clean = text.replace(/\s/g, '').replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
             const km = clean.match(/(\d[\d,.]*)([KkMm])/);
             if (km) {
                 const base = parseFloat(km[1].replace(/,/g, ''));
                 return Math.round(base * (km[2].toLowerCase() === 'k' ? 1000 : 1000000));
             }
-            const nums = clean.match(/\d[\d,]*/g);
+            const nums = clean.match(/\d[\d]*/g);
             if (nums && nums.length > 0) {
-                return parseInt(nums.sort((a, b) => b.length - a.length)[0].replace(/,/g, ''), 10) || 0;
+                return parseInt(nums.sort((a, b) => b.length - a.length)[0], 10) || 0;
             }
             return 0;
         }
 
-        // ทำ OCR บน canvas หนึ่งอัน
-        async function ocrCanvas(canvas) {
-            try {
-                const worker = await getOcrWorker();
-                const { data: { text } } = await worker.recognize(canvas);
-                return parseOcrNumber(text);
-            } catch(e) { return 0; }
-        }
-
-        // สร้าง canvas crop จาก srcCanvas ที่ (rx,ry,rw,rh) แล้ว preprocess หลายแบบ
-        function makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode) {
-            const SCALE = 4; // scale up 4x เพื่อความชัด
-            const c = document.createElement('canvas');
-            c.width  = rw * SCALE;
-            c.height = rh * SCALE;
-            const ctx = c.getContext('2d');
+        // ปรับปรุงฟังก์ชัน Image Processing บริเวณตัวเลขเพื่อให้อ่านค่า OCR บนจอมือถือได้แม่นยำสูงสุด
+        function preprocessNumberCrop(srcCanvas, rx, ry, rw, rh) {
+            const SCALE_UP = 3; 
+            const canvas = document.createElement('canvas');
+            canvas.width = rw * SCALE_UP;
+            canvas.height = rh * SCALE_UP;
+            const ctx = canvas.getContext('2d');
             ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(srcCanvas, rx, ry, rw, rh, 0, 0, c.width, c.height);
+            ctx.drawImage(srcCanvas, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height);
 
-            const imgData = ctx.getImageData(0, 0, c.width, c.height);
-            const d = imgData.data;
-
-            if (mode === 'dark_bg') {
-                // ตัวเลขสีขาว/เหลืองบนพื้นมืด → invert แล้ว threshold
-                for (let i = 0; i < d.length; i += 4) {
-                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-                    const v = g > 160 ? 0 : 255; // ตัวสว่าง→ดำ, พื้นมืด→ขาว
-                    d[i] = d[i+1] = d[i+2] = v;
-                }
-            } else if (mode === 'light_bg') {
-                // ตัวเลขสีเข้มบนพื้นขาว → threshold ตรง
-                for (let i = 0; i < d.length; i += 4) {
-                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-                    const v = g < 128 ? 0 : 255;
-                    d[i] = d[i+1] = d[i+2] = v;
-                }
-            } else if (mode === 'yellow') {
-                // ดึงเฉพาะ channel สีเหลือง (R สูง, G สูง, B ต่ำ)
-                for (let i = 0; i < d.length; i += 4) {
-                    const isYellow = d[i] > 150 && d[i+1] > 120 && d[i+2] < 100;
-                    const v = isYellow ? 0 : 255;
-                    d[i] = d[i+1] = d[i+2] = v;
-                }
-            } else {
-                // raw grayscale
-                for (let i = 0; i < d.length; i += 4) {
-                    const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
-                    d[i] = d[i+1] = d[i+2] = g;
-                }
+            try {
+                let src = cv.imread(canvas);
+                let gray = new cv.Mat();
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+                
+                // เพิ่มระดับ Contrast และกรองขยะออกจากพิกเซลตัวเลข
+                let dst = new cv.Mat();
+                cv.threshold(gray, dst, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+                
+                cv.imshow(canvas, dst);
+                src.delete(); gray.delete(); dst.delete();
+            } catch (e) {
+                console.error("OpenCV Preprocess Error, switching to canvas alternative fallback", e);
             }
-            ctx.putImageData(imgData, 0, 0);
-            return c;
+            return canvas;
         }
 
-        // OCR บริเวณรอบๆ icon หลายตำแหน่ง + หลาย mode
         async function ocrAroundMatch(srcCanvas, matchX, matchY, tmplW, tmplH) {
             const W = srcCanvas.width, H = srcCanvas.height;
-
-            // กำหนดพื้นที่ค้นหาตัวเลขรอบๆ icon
-            const pw = tmplW, ph = tmplH;
+            // คำนวณขอบเขตกรอบตัวเลขใต้ไอคอนสำหรับ UI เกมส่วนใหญ่
             const regions = [
-                // ใต้ icon (ตัวเลขมักอยู่ใต้ไอคอน)
-                { x: matchX - Math.round(pw*0.3), y: matchY + ph,               w: pw + Math.round(pw*0.6), h: Math.round(ph*0.8) },
-                // มุมขวาล่าง (badge จำนวนเล็ก)
-                { x: matchX + Math.round(pw*0.4), y: matchY + Math.round(ph*0.5), w: Math.round(pw*0.9),     h: Math.round(ph*0.6) },
-                // ขวาของ icon
-                { x: matchX + pw,                 y: matchY,                     w: Math.round(pw*1.5),      h: ph },
-                // ทั้ง icon + ใต้ icon (crop กว้างๆ)
-                { x: matchX - Math.round(pw*0.2), y: matchY,                     w: pw + Math.round(pw*0.4), h: ph + Math.round(ph*0.9) },
-                // บน icon (บางเกมแสดงเลขด้านบน)
-                { x: matchX - Math.round(pw*0.2), y: matchY - Math.round(ph*0.5), w: pw + Math.round(pw*0.4), h: Math.round(ph*0.6) },
+                { x: matchX - Math.round(tmplW*0.1), y: matchY + Math.round(tmplH*0.95), w: Math.round(tmplW * 1.2), h: Math.round(tmplH * 0.45) },
+                { x: matchX + Math.round(tmplW*0.35), y: matchY + Math.round(tmplH*0.5), w: Math.round(tmplW * 0.8), h: Math.round(tmplH * 0.45) }
             ];
 
-            const modes = ['dark_bg', 'yellow', 'light_bg', 'raw'];
-
+            const worker = await getOcrWorker();
             for (const reg of regions) {
                 const rx = Math.max(0, reg.x), ry = Math.max(0, reg.y);
                 const rw = Math.min(reg.w, W - rx), rh = Math.min(reg.h, H - ry);
-                if (rw < 6 || rh < 6) continue;
+                if (rw < 8 || rh < 8) continue;
 
-                for (const mode of modes) {
-                    const crop = makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode);
-                    const num = await ocrCanvas(crop);
-                    if (num > 0 && num < 10000000) return num; // sanity check
-                }
+                const processedCanvas = preprocessNumberCrop(srcCanvas, rx, ry, rw, rh);
+                const { data: { text } } = await worker.recognize(processedCanvas);
+                const score = parseOcrNumber(text);
+                if (score > 0 && score < 9999999) return score; 
             }
             return 0;
         }
 
-        // =========================================================
-        // ฟังก์ชัน Template Matching หลัก + OCR
-        // =========================================================
+        // ฟังก์ชันสแกนหลักที่ปรับปรุงให้บีบอัด Ram ไม่ให้เบราว์เซอร์มือถือ Crash ค้าง
         async function doScan() {
             if (!cvReady || !scanImageElement) return;
 
             const btn = document.getElementById("btn-do-scan");
             btn.disabled = true;
-            btn.textContent = "⏳ กำลังสแกน...";
+            btn.textContent = "⏳ กำลังประมวลผลรูปภาพ...";
 
             const progressBar = document.getElementById("scan-progress-bar");
             const progressFill = document.getElementById("scan-progress-fill");
             progressBar.classList.add("show");
             progressFill.style.width = "0%";
 
-            detectionCounts = {};
+            await new Promise(r => setTimeout(r, 60));
 
-            // วาดภาพใหญ่ลง canvas
+            // จำกัดความกว้างเพื่อป้องกัน Memory Out บนอุปกรณ์เคลื่อนที่
+            const MAX_MOBILE_WIDTH = 1280;
+            let targetW = scanImageElement.naturalWidth;
+            let targetH = scanImageElement.naturalHeight;
+            if (targetW > MAX_MOBILE_WIDTH) {
+                const ratio = MAX_MOBILE_WIDTH / targetW;
+                targetW = MAX_MOBILE_WIDTH;
+                targetH = Math.round(targetH * ratio);
+            }
+
             const srcCanvas = document.createElement("canvas");
-            srcCanvas.width = scanImageElement.naturalWidth;
-            srcCanvas.height = scanImageElement.naturalHeight;
+            srcCanvas.width = targetW;
+            srcCanvas.height = targetH;
             const srcCtx = srcCanvas.getContext("2d");
-            srcCtx.drawImage(scanImageElement, 0, 0);
-
-            // โหลด OCR worker ล่วงหน้า
-            btn.textContent = "⏳ โหลด OCR...";
-            await getOcrWorker();
+            srcCtx.drawImage(scanImageElement, 0, 0, targetW, targetH);
 
             let logLines = [];
             const total = templateDefs.length;
 
-            for (let ti = 0; ti < total; ti++) {
-                const tDef = templateDefs[ti];
-                const pct = Math.round((ti / total) * 100);
-                progressFill.style.width = pct + "%";
-                btn.textContent = `⏳ สแกน ${ti+1}/${total}: ${tDef.name}`;
+            try {
+                let srcMat = cv.imread(srcCanvas);
+                let srcGray = new cv.Mat();
+                cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY, 0);
 
-                await new Promise(r => setTimeout(r, 10));
+                for (let ti = 0; ti < total; ti++) {
+                    const tDef = templateDefs[ti];
+                    progressFill.style.width = Math.round((ti / total) * 100) + "%";
+                    btn.textContent = `⏳ ตรวจสอบไอเทม (${ti+1}/${total}): ${tDef.name}`;
+                    await new Promise(r => setTimeout(r, 20));
 
-                const tmplImg = loadedTemplates[tDef.file];
-                if (!tmplImg) {
-                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่มี template</span>`);
-                    detectionCounts[tDef.file] = 0;
-                    continue;
-                }
-
-                const tmplCanvas = document.createElement("canvas");
-                tmplCanvas.width = tmplImg.naturalWidth;
-                tmplCanvas.height = tmplImg.naturalHeight;
-                tmplCanvas.getContext("2d").drawImage(tmplImg, 0, 0);
-
-                const THRESHOLD = 0.72;
-                let bestVal = -Infinity;
-                // เก็บทุก match position ของ scale ที่ดีที่สุด
-                let bestMatches = []; // [{x, y, w, h, val}]
-                let bestScaleW = 0, bestScaleH = 0;
-
-                try {
-                    const src = cv.imread(srcCanvas);
-                    const tmpl = cv.imread(tmplCanvas);
-                    const scales = [0.5, 0.75, 1.0, 1.25, 1.5];
-
-                    for (const scale of scales) {
-                        const tw = Math.round(tmplImg.naturalWidth * scale);
-                        const th = Math.round(tmplImg.naturalHeight * scale);
-                        if (tw < 8 || th < 8 || tw > srcCanvas.width || th > srcCanvas.height) continue;
-
-                        const tmplResized = new cv.Mat();
-                        cv.resize(tmpl, tmplResized, new cv.Size(tw, th));
-
-                        const result = new cv.Mat();
-                        cv.matchTemplate(src, tmplResized, result, cv.TM_CCOEFF_NORMED);
-
-                        const { maxVal } = cv.minMaxLoc(result);
-                        const matches = getMatchPositions(result, THRESHOLD, tw, th);
-
-                        if (maxVal > bestVal) {
-                            bestVal = maxVal;
-                            bestMatches = matches.map(m => ({ ...m, w: tw, h: th }));
-                            bestScaleW = tw;
-                            bestScaleH = th;
-                        }
-
-                        tmplResized.delete();
-                        result.delete();
+                    const tmplImg = loadedTemplates[tDef.file];
+                    if (!tmplImg) {
+                        logLines.push(`<span class="log-notfound">✗ ไม่สามารถตรวจสอบ ${tDef.name} ได้เนื่องจากขาดภาพต้นแบบ</span>`);
+                        detectionCounts[tDef.file] = 0;
+                        continue;
                     }
 
-                    src.delete();
-                    tmpl.delete();
+                    // ปรับสัดส่วนขนาดภาพต้นแบบตาม Scale ย่อของจอรูปใหญ่
+                    const initialScale = targetW / scanImageElement.naturalWidth;
+                    const tmplCanvas = document.createElement("canvas");
+                    tmplCanvas.width = Math.round(tmplImg.naturalWidth * initialScale);
+                    tmplCanvas.height = Math.round(tmplImg.naturalHeight * initialScale);
+                    tmplCanvas.getContext("2d").drawImage(tmplImg, 0, 0, tmplCanvas.width, tmplCanvas.height);
 
-                } catch (err) {
-                    console.error("Template matching error:", tDef.file, err);
+                    let tmplMat = cv.imread(tmplCanvas);
+                    let tmplGray = new cv.Mat();
+                    cv.cvtColor(tmplMat, tmplGray, cv.COLOR_RGBA2GRAY, 0);
+
+                    // สแกนตรวจสอบแบบข้ามขั้นตอนเพื่อลด Load การประมวลผลบน Mobile CPU
+                    const searchScales = [0.85, 1.0, 1.15];
+                    let bestVal = -Infinity;
+                    let bestMatches = [];
+
+                    for (const scale of searchScales) {
+                        let tw = Math.round(tmplGray.cols * scale);
+                        let th = Math.round(tmplGray.rows * scale);
+                        if (tw > srcGray.cols || th > srcGray.rows || tw < 12 || th < 12) continue;
+
+                        let resizedTmpl = new cv.Mat();
+                        cv.resize(tmplGray, resizedTmpl, new cv.Size(tw, th), 0, 0, cv.INTER_LINEAR);
+
+                        let matchResult = new cv.Mat();
+                        cv.matchTemplate(srcGray, resizedTmpl, matchResult, cv.TM_CCOEFF_NORMED);
+
+                        let minMax = cv.minMaxLoc(matchResult);
+                        if (minMax.maxVal > bestVal) {
+                            bestVal = minMax.maxVal;
+                            if (minMax.maxVal >= 0.70) { 
+                                bestMatches = getMatchPositionsNMS(matchResult, 0.70, tw, th);
+                            }
+                        }
+                        resizedTmpl.delete();
+                        matchResult.delete();
+                    }
+
+                    tmplMat.delete();
+                    tmplGray.delete();
+
+                    if (bestMatches.length > 0) {
+                        const topMatch = bestMatches[0];
+                        let detectedNum = await ocrAroundMatch(srcCanvas, topMatch.x, topMatch.y, topMatch.w, topMatch.h);
+                        
+                        // ในกรณีที่ตัวเลขเป็น 1 ชิ้นหรือช่องเควสที่ไม่มีเลขกํากับ ให้ยึดจากจำนวน Icon Node ที่พบ
+                        let finalVal = detectedNum > 0 ? detectedNum : bestMatches.length;
+                        detectionCounts[tDef.file] = finalVal;
+
+                        logLines.push(`<span class="log-found">✓ พบ ${tDef.name} จำนวน ${finalVal.toLocaleString()} ชิ้น (ความแม่นยำ ${(bestVal*100).toFixed(0)}%)</span>`);
+                    } else {
+                        detectionCounts[tDef.file] = 0;
+                        logLines.push(`<span class="log-notfound">✗ ไม่พบไอเทม ${tDef.name} ในภาพ</span>`);
+                    }
                 }
 
-                if (bestMatches.length === 0) {
-                    detectionCounts[tDef.file] = 0;
-                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่พบในภาพ</span>`);
-                    continue;
-                }
-
-                // อ่านตัวเลขจากตำแหน่ง match แรก (ที่ confidence สูงสุด)
-                btn.textContent = `🔢 OCR: ${tDef.name}`;
-                await new Promise(r => setTimeout(r, 5));
-
-                const best = bestMatches[0];
-                let ocrNum = await ocrAroundMatch(srcCanvas, best.x, best.y, best.w, best.h);
-
-                // ถ้า OCR ไม่ได้ตัวเลข ใช้จำนวน match แทน
-                const finalCount = ocrNum > 0 ? ocrNum : bestMatches.length;
-                detectionCounts[tDef.file] = finalCount;
-
-                const ocrNote = ocrNum > 0
-                    ? `📖 OCR อ่านได้: <strong>${finalCount.toLocaleString()}</strong>`
-                    : `🔢 พบไอคอน ${bestMatches.length} จุด (OCR ไม่ได้เลข)`;
-
-                logLines.push(`<span class="log-found">✓ ${tDef.name} — ${ocrNote} (conf: ${(bestVal*100).toFixed(1)}%)</span>`);
+                srcMat.delete();
+                srcGray.delete();
+            } catch (err) {
+                console.error("Critical Runtime Error during Mobile Scanning Process:", err);
+                alert("เกิดข้อผิดพลาดในการประมวลผลภาพบนระบบมือถือ กรุณาลองใหม่อีกครั้ง");
             }
 
             progressFill.style.width = "100%";
             renderDetectionCards();
+            
             document.getElementById("scan-log").innerHTML = logLines.join("<br>");
             document.getElementById("scan-log").classList.add("show");
             document.getElementById("detection-results").classList.add("show");
 
             btn.disabled = false;
-            btn.textContent = "🔍 สแกนอีกครั้ง";
+            btn.textContent = "🔍 สแกนรูปภาพใหม่อีกครั้ง";
         }
 
-        // คืน array ของตำแหน่ง match (พร้อม NMS)
-        function getMatchPositions(resultMat, threshold, tmplW, tmplH) {
-            const data = resultMat.data32F;
+        function getMatchPositionsNMS(resultMat, threshold, tw, th) {
             const cols = resultMat.cols;
             const rows = resultMat.rows;
-            const visited = new Uint8Array(cols * rows);
-            const minDist = Math.max(tmplW, tmplH) * 0.5;
+            const data = resultMat.data32F;
             const candidates = [];
 
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
-                    const val = data[r * cols + c];
-                    if (val >= threshold) candidates.push({ r, c, val });
+                    const v = data[r * cols + c];
+                    if (v >= threshold) candidates.push({ r, c, val: v });
                 }
             }
             candidates.sort((a, b) => b.val - a.val);
 
             const results = [];
-            for (const pt of candidates) {
-                const idx = pt.r * cols + pt.c;
+            const visited = new Uint8Array(cols * rows);
+            const nmsRadius = Math.max(tw, th) * 0.6;
+
+            for (const cand of candidates) {
+                const idx = cand.r * cols + cand.c;
                 if (visited[idx]) continue;
-                results.push({ x: pt.c, y: pt.r, val: pt.val });
-                const r0 = Math.max(0, Math.round(pt.r - minDist));
-                const r1 = Math.min(rows - 1, Math.round(pt.r + minDist));
-                const c0 = Math.max(0, Math.round(pt.c - minDist));
-                const c1 = Math.min(cols - 1, Math.round(pt.c + minDist));
-                for (let rr = r0; rr <= r1; rr++)
-                    for (let cc = c0; cc <= c1; cc++)
+
+                results.push({ x: cand.c, y: cand.r, w: tw, h: th, val: cand.val });
+
+                const r0 = Math.max(0, Math.round(cand.r - nmsRadius));
+                const r1 = Math.min(rows - 1, Math.round(cand.r + nmsRadius));
+                const c0 = Math.max(0, Math.round(cand.c - nmsRadius));
+                const c1 = Math.min(cols - 1, Math.round(cand.c + nmsRadius));
+
+                for (let rr = r0; rr <= r1; rr++) {
+                    for (let cc = c0; cc <= c1; cc++) {
                         visited[rr * cols + cc] = 1;
+                    }
+                }
             }
             return results;
         }
 
-        // (compat alias เดิม)
-        function countMatches(resultMat, threshold, tmplW, tmplH) {
-            return getMatchPositions(resultMat, threshold, tmplW, tmplH).length;
-        }
-
-        // แสดง Cards ผลการตรวจจับ
         function renderDetectionCards() {
             const grid = document.getElementById("detection-grid");
             grid.innerHTML = "";
@@ -928,22 +866,23 @@
                 card.className = "detection-card" + (count === 0 ? " not-found" : "");
                 card.id = "dcard_" + tDef.file.replace(/\./g, "_");
 
+                // เพิ่ม inputmode เเละ pattern เเบบ Mobile-Friendly เพื่อความสะดวกเมื่อใช้งานบนมือถือ
                 card.innerHTML = `
                     <img class="detection-card-img" src="${imgSrc}" alt="${tDef.name}" onerror="this.style.display='none'">
                     <div class="detection-card-body">
                         <div class="detection-card-name">${tDef.name}</div>
                         <div class="detection-card-count-row">
-                            <button class="btn-c" onclick="changeDetection('${tDef.file}', -1)" aria-label="ลด">−</button>
+                            <button class="btn-c" onclick="changeDetection('${tDef.file}', -1)">−</button>
                             <input class="detection-card-count-input" 
                                 id="dcnt_${tDef.file.replace(/\./g,'_')}" 
-                                type="number" min="0" value="${count}"
+                                type="number" pattern="[0-9]*" inputmode="numeric" min="0" value="${count}"
                                 onchange="setDetection('${tDef.file}', parseInt(this.value)||0)"
                                 oninput="setDetection('${tDef.file}', parseInt(this.value)||0)">
-                            <button class="btn-c" onclick="changeDetection('${tDef.file}', 1)" aria-label="เพิ่ม">+</button>
+                            <button class="btn-c" onclick="changeDetection('${tDef.file}', 1)">+</button>
                             <span class="detection-card-label">ชิ้น</span>
                         </div>
                         <div class="detection-card-confidence" id="dconf_${tDef.file.replace(/\./g,'_')}">
-                            ${count > 0 ? `🟢 จำนวน: ${count.toLocaleString()} ชิ้น` : "⚪ ไม่พบในภาพ"}
+                            ${count > 0 ? `🟢 ตรวจพบ: ${count.toLocaleString()} ชิ้น` : "⚪ ไม่พบไอเทมนี้"}
                         </div>
                     </div>
                 `;
@@ -966,21 +905,14 @@
 
         function updateDetectionCardStyle(file) {
             const count = detectionCounts[file] || 0;
-            const cardId = "dcard_" + file.replace(/\./g, "_");
-            const card = document.getElementById(cardId);
-            if (card) {
-                card.className = "detection-card" + (count === 0 ? " not-found" : "");
-            }
-            const confId = "dconf_" + file.replace(/\./g, "_");
-            const confEl = document.getElementById(confId);
-            if (confEl) {
-                confEl.textContent = count > 0 ? `🟢 จำนวน ${count} ชิ้น` : "⚪ ไม่พบในภาพ";
-            }
+            const card = document.getElementById("dcard_" + file.replace(/\./g, "_"));
+            if (card) card.className = "detection-card" + (count === 0 ? " not-found" : "");
+            
+            const confEl = document.getElementById("dconf_" + file.replace(/\./g, "_"));
+            if (confEl) confEl.textContent = count > 0 ? `🟢 ตรวจพบ: ${count} ชิ้น` : "⚪ ไม่พบไอเทมนี้";
         }
 
-        // =========================================================
-        // Drag & Drop support
-        // =========================================================
+        // Configuration setup for Drag & Drop
         const uploadZone = document.getElementById("upload-zone");
         uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.style.borderColor = "#00838f"; });
         uploadZone.addEventListener("dragleave", () => { uploadZone.style.borderColor = ""; });
@@ -989,13 +921,12 @@
             uploadZone.style.borderColor = "";
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith("image/")) {
-                const fakeEvent = { target: { files: [file] } };
-                onScanImageSelected(fakeEvent);
+                onScanImageSelected({ target: { files: [file] } });
             }
         });
 
         // =========================================================
-        // Reward Milestones
+        // Reward Milestones & Core App Features
         // =========================================================
         const rewardMilestones = [
             { score: 5000, rewards: { "เคออส": 500, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
@@ -1019,17 +950,10 @@
         ];
 
         const dailyTargetValues = {
-            "ล็อคอิน": 1,
-            "ผ่านด่านฟาร์มเคออส 1 ครั้ง": 8,
-            "ฟาร์มการปราบผู้นำ 1 ครั้ง": 7,
-            "ผ่านด่านการทดสอบทีม 1 ครั้ง": 20,
-            "บริจาคกิลด์ 1 ครั้ง": 12,
-            "ทำการต่อรองราคากิลด์ 1 ครั้ง": 1,
-            "ฟาร์มการปราบกิลด์ 1 ครั้ง": 3,
-            "สงครามโดม 1 ครั้ง": 10,
-            "ชนะในสงครามโดม 1 ครั้ง": 10,
-            "ชนะอารีน่า 1 ครั้ง": 130,
-            "อารีน่า 1 ครั้ง": 130
+            "ล็อคอิน": 1, "ผ่านด่านฟาร์มเคออส 1 ครั้ง": 8, "ฟาร์มการปราบผู้นำ 1 ครั้ง": 7,
+            "ผ่านด่านการทดสอบทีม 1 ครั้ง": 20, "บริจาคกิลด์ 1 ครั้ง": 12, "ทำการต่อรองราคากิลด์ 1 ครั้ง": 1,
+            "ฟาร์มการปราบกิลด์ 1 ครั้ง": 3, "สงครามโดม 1 ครั้ง": 10, "ชนะในสงครามโดม 1 ครั้ง": 10,
+            "ชนะอารีน่า 1 ครั้ง": 130, "อารีน่า 1 ครั้ง": 130
         };
 
         function toggleAllDaily(isChecked) {
@@ -1364,7 +1288,7 @@
             URL.revokeObjectURL(a.href);
         }
 
-        // เริ่มต้น
+        // App Initialization
         loadFromStorage();
         initProgressMarkers();
         updateProfileDropdown();
