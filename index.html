@@ -49,7 +49,7 @@
         .counter { display: flex; align-items: center; gap: 4px; grid-column: 3; justify-self: end }
         .btn-c { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface2); cursor: pointer; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center; color: var(--text2); user-select: none; }
         .btn-c:active { background: var(--border); color: var(--text) }
-        .cnt-input { width: 42px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); text-align: center; font-size: 13px; font-weight: 600; color: var(--text); font-family: inherit; padding: 0; font-variant-numeric: tabular-nums; }
+        .cnt-input { width: 42px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); text-align: center; font-size: 13px; font-weight: 600; color: var(--text); font-family: inherit; padding: 0; }
         .item-sub { grid-column: 4; font-size: 11px; min-width: 52px; text-align: right; color: var(--text3); font-variant-numeric: tabular-nums }
         .note,.note1 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 12px; }
         .note strong,.note1 strong { color: var(--text); font-weight: 600 }
@@ -259,13 +259,13 @@
 <script>
 const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
 
-// ปรับปรุงชื่อไฟล์ไอเทมคลีน ๆ ตรงตามภาพในคลังของคุณทุกประการ
+// รายชื่อรูปภาพไอเทมตามจริงในคลังโปรเจกต์ของคุณ
 const templateDefs = [
     { file: "BlessingRoy.JPG",    name: "คุ้มครองลอย" },
     { file: "CrystalRed.JPG",     name: "ส่งคริสตัล 10 เม็ด" },
     { file: "GoldenKey.JPG",       name: "กุญแจทอง" },
     { file: "GuildBlueCoin.JPG",   name: "เหรียญกิลด์คริสตัลฟ้า" },
-    { file: "GuildCoin.jpg",           name: "เหรียญกิลด์" },
+    { file: "GuildCoin.jpg",       name: "เหรียญกิลด์" },
     { file: "HammerRelic.JPG",     name: "โบราณคดีโบราณวัตถุ" },
     { file: "PotionGh.JPG",        name: "ยาวิญญาณเวท" },
     { file: "Rune.JPG",            name: "อัญเชิญรูน" },
@@ -282,7 +282,9 @@ const nameToFile = {
     "อัญเชิญรูน":            "Rune.JPG",
 };
 
-const CLAUDE_PROMPT = `Analyze this game inventory screenshot. Extract numbers or scale counts (e.g. 3.51K -> 3510, 7.75K -> 7750) for these items:
+// ปรับปรุง System Prompt ให้บังคับแปลงหน่วย K เป็นตัวเลขเต็มหลัก เช่น 3.51K -> 3510 โดยส่งกลับมาเป็นโครงสร้างดิบ
+const CLAUDE_PROMPT = `You are an automated game scanner. Analyze this inventory image.
+Calculate and find numbers or counts under these specific keys:
 - คุ้มครองลอย
 - ส่งคริสตัล 10 เม็ด
 - กุญแจทอง
@@ -291,7 +293,10 @@ const CLAUDE_PROMPT = `Analyze this game inventory screenshot. Extract numbers o
 - โบราณคดีโบราณวัตถุ
 - ยาวิญญาณเวท
 - อัญเชิญรูน
-Return a strict raw JSON only, no markdown, no wrapping:`;
+
+Rule: Convert scales (like 3.51K into 3510, 7.75K into 7750) to exact integers.
+Output format MUST be a single raw JSON object block ONLY. Do not write markdown, do not wrap in backticks.
+Example output: {"คุ้มครองลอย":12,"ส่งคริสตัล 10 เม็ด":552,"กุญแจทอง":9,"เหรียญกิลด์คริสตัลฟ้า":400,"เหรียญกิลด์":7750,"โบราณคดีโบราณวัตถุ":142,"ยาวิญญาณเวท":140,"อัญเชิญรูน":3510}`;
 
 let loadedTemplates = {};
 let cvReady = false;
@@ -372,7 +377,7 @@ async function doScan() {
     else await doScanCV();
 }
 
-// ── แก้ไขระบบโครงสร้างเรียกใช้งานโมเดลเรือธงฝั่ง v1 ──
+// ── ฟังก์ชันเรียกใช้งานคลาวด์สแกนภาพ ปรับปรุงโครงสร้างแก้ Payload Error ──
 async function doScanGemini() {
     const apiKey = getApiKey();
     if (!apiKey) return alert('กรุณากรอก Gemini API Key ก่อนใช้งาน');
@@ -392,7 +397,6 @@ async function doScanGemini() {
     const mimeType = scanImageBase64.startsWith('/9j') ? 'image/jpeg' : 'image/png';
 
     try {
-        // อัปเดตโครงสร้างพาสโมเดลหลักที่ไม่พึ่งพาพารามิเตอร์ย่อยของเวอร์ชันทดลอง
         const resp = await fetch(
             `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
             {
@@ -404,11 +408,8 @@ async function doScanGemini() {
                             { inline_data: { mime_type: mimeType, data: scanImageBase64 } },
                             { text: CLAUDE_PROMPT }
                         ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.1,
-                        responseMimeType: 'application/json',
-                    }
+                    }]
+                    // ถอดฟิลด์ responseMimeType ออกเนื่องจากเวอร์ชันคอร์ v1 หลักไม่รองรับฟิลด์คำสั่งนี้
                 })
             }
         );
@@ -421,7 +422,10 @@ async function doScanGemini() {
         }
 
         const data = await resp.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        
+        // กรองล้างอักษรขยะหรือโครงสร้าง Markdown ที่ระบบแถมกลับมาให้อัตโนมัติ ป้องกัน JSON ล่ม
+        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
         
         let result = JSON.parse(text);
 
