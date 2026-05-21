@@ -1,684 +1,1374 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ตารางคำนวณคะแนนรายวัน</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0 }
-        :root {
-            --bg: #f5f4f0; --surface: #ffffff; --surface2: #f0eeea;
-            --border: #e0ddd6; --border2: #ccc9c0; --text: #1a1916;
-            --text2: #6b6860; --text3: #9b9890; --radius: 12px; --radius-sm: 8px;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
         }
-        body { font-family: 'IBM Plex Sans Thai', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 1rem 0.75rem 3rem; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --bg: #f5f4f0;
+            --surface: #ffffff;
+            --surface2: #f0eeea;
+            --border: #e0ddd6;
+            --border2: #ccc9c0;
+            --text: #1a1916;
+            --text2: #6b6860;
+            --text3: #9b9890;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem 0.75rem 3rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         .page { max-width: 960px; margin: 0 auto }
-        .profile-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+        /* Profile Manager Box */
+        .profile-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
         .profile-row { display: flex; gap: 8px; align-items: center; }
-        .profile-select { flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); font-family: inherit; font-size: 13px; color: var(--text); }
-        .input-profile-name { flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); font-family: inherit; font-size: 13px; }
+        .profile-select {
+            flex: 1; padding: 8px 12px;
+            border-radius: var(--radius-sm); border: 1px solid var(--border2);
+            background: var(--surface); font-family: inherit; font-size: 13px; color: var(--text);
+        }
+        .input-profile-name {
+            flex: 1; padding: 8px 12px;
+            border-radius: var(--radius-sm); border: 1px solid var(--border2);
+            font-family: inherit; font-size: 13px;
+        }
         .io-actions-row { display: flex; gap: 8px; width: 100%; }
         .io-actions-row .btn { flex: 1; justify-content: center; font-size: 11px; padding: 8px; }
         .btn-io-export { background: #4a148c; color: #fff; border-color: #4a148c; }
         .btn-io-import { background: #2e7d32; color: #fff; border-color: #2e7d32; }
-        .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 12px; flex-wrap: wrap; }
+
+        /* header */
+        .top-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem; gap: 12px; flex-wrap: wrap;
+        }
         .page-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em }
         .top-actions { display: flex; gap: 6px; flex-wrap: wrap; width: 100% }
         .top-actions .btn { flex: 1; justify-content: center; text-align: center; }
-        .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-family: inherit; font-weight: 500; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.1s; white-space: nowrap; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; font-family: inherit; font-weight: 500;
+            padding: 9px 12px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border2); background: var(--surface);
+            color: var(--text2); cursor: pointer; transition: all 0.1s; white-space: nowrap;
+        }
         .btn:active { background: var(--surface2) }
         .btn-primary { background: var(--text); color: #fff; border-color: var(--text); }
         .btn-danger { background: #b71c1c; color: #fff; border-color: #b71c1c; }
         .btn svg { width: 14px; height: 14px; flex-shrink: 0 }
-        .banner { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 12px; }
+
+        /* banner */
+        .banner {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 1rem 1.25rem;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem; gap: 12px;
+        }
         .banner-label { font-size: 11px; color: var(--text3); margin-bottom: 2px; font-weight: 500; text-transform: uppercase }
         .banner-score { font-size: 28px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums }
         .banner-right { text-align: right }
         .banner-sub { font-size: 11px; color: var(--text3); margin-top: 2px }
+
+        /* grid */
         .days-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; margin-bottom: 1rem }
+
+        /* card */
         .day-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
         .day-header { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .day-name { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 7px }
         .day-total { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); font-variant-numeric: tabular-nums }
-        .hd-tue{background:#b71c1c}.hd-wed{background:#bf360c}.hd-thu{background:#4a148c}.hd-fri{background:#0d47a1}.hd-sat{background:#1b5e20}.hd-sun{background:#004d40}
+        .hd-tue { background: #b71c1c }
+        .hd-wed { background: #bf360c }
+        .hd-thu { background: #4a148c }
+        .hd-fri { background: #0d47a1 }
+        .hd-sat { background: #1b5e20 }
+        .hd-sun { background: #004d40 }
+
+        /* items */
         .items-list { padding: 4px 0 }
         .item-row { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--bg); }
         .item-row:last-child { border-bottom: none }
+        .dot { width: 6px; height: 6px; border-radius: 50%; grid-column: 1 }
+        .dot-yellow { background: #f9a825 }
+        .dot-orange { background: #d84315 }
+        .dot-cyan { background: #00838f }
+        .dot-green { background: #2e7d32 }
+        .dot-none { background: transparent }
+        .item-main { grid-column: 2; display: flex; flex-direction: column; min-width: 0; }
+        .item-label { font-size: 12px; color: var(--text); line-height: 1.3; word-break: break-word }
+        .item-pts { font-size: 10px; color: var(--text3); font-variant-numeric: tabular-nums; margin-top: 1px }
         .counter { display: flex; align-items: center; gap: 4px; grid-column: 3; justify-self: end }
-        .btn-c { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface2); cursor: pointer; font-size: 16px; line-height: 1; display: flex; align-items: center; justify-content: center; color: var(--text2); user-select: none; }
+        .btn-c {
+            width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 50%;
+            background: var(--surface2); cursor: pointer; font-size: 16px; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text2); user-select: none;
+        }
         .btn-c:active { background: var(--border); color: var(--text) }
-        .cnt-input { width: 42px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); text-align: center; font-size: 13px; font-weight: 600; color: var(--text); font-family: inherit; padding: 0; }
+        .cnt-input {
+            width: 42px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: var(--surface2); text-align: center; font-size: 13px; font-weight: 600;
+            color: var(--text); font-family: inherit; padding: 0; font-variant-numeric: tabular-nums;
+            -moz-appearance: textfield;
+        }
+        .cnt-input::-webkit-outer-spin-button, .cnt-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .cnt-input:focus { outline: none; border-color: var(--text2); background: #fff }
         .item-sub { grid-column: 4; font-size: 11px; min-width: 52px; text-align: right; color: var(--text3); font-variant-numeric: tabular-nums }
-        .note,.note1 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 12px; }
-        .note strong,.note1 strong { color: var(--text); font-weight: 600 }
-        .legend { display: flex; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 1rem; font-size: 11px; color: var(--text3); align-items: center; padding: 0 4px; }
+        .sub-active { color: var(--text); font-weight: 600 }
+
+        /* note */
+        .note, .note1 {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 12px 14px;
+            font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 12px;
+        }
+        .note strong, .note1 strong { color: var(--text); font-weight: 600 }
+
+        /* legend */
+        .legend {
+            display: flex; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 1rem;
+            font-size: 11px; color: var(--text3); align-items: center; padding: 0 4px;
+        }
         .legend-item { display: flex; align-items: center; gap: 5px }
         .legend-dot { width: 8px; height: 8px; border-radius: 50% }
-        @media(min-width:600px){.top-actions{width:auto}.profile-section{flex-direction:row;align-items:center;}body{padding:1.5rem 1rem 3rem;}}
-        .progress-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+
+        @media(min-width:600px) {
+            .top-actions { width: auto }
+            .profile-section { flex-direction: row; align-items: center; }
+            body { padding: 1.5rem 1rem 3rem; }
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem;
+        }
         .progress-labels { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .progress-bar-container { width: 100%; height: 14px; background: var(--surface2); border-radius: 7px; position: relative; margin-bottom: 12px; }
         .progress-fill { height: 100%; background: #00838f; border-radius: 7px; width: 0%; transition: width 0.4s cubic-bezier(0.4,0,0.2,1); }
         .progress-markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .marker { position: absolute; top: -2px; bottom: -2px; width: 16px; margin-left: -8px; background: transparent; cursor: pointer; z-index: 10; }
         .marker::after { content: ''; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); width: 2px; height: 14px; background: rgba(255,255,255,0.9); border-radius: 1px; transition: all 0.2s; }
-        .marker:hover::after,.marker:active::after{background:#f9a825;width:4px;}
+        .marker:hover::after, .marker:active::after { background: #f9a825; width: 4px; }
         .marker .tooltip { visibility: hidden; background-color: #2c2a26; color: #fff; text-align: center; border-radius: 8px; padding: 8px 12px; position: absolute; z-index: 20; bottom: 120%; left: 50%; transform: translateX(-50%) translateY(10px); white-space: nowrap; font-size: 11.5px; line-height: 1.5; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transition: all 0.2s cubic-bezier(0.4,0,0.2,1); pointer-events: none; }
         .marker .tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #2c2a26 transparent transparent transparent; }
-        .marker:hover .tooltip,.marker:active .tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0);}
-        .tooltip-score{color:#f9a825;font-weight:600;display:block;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:4px;}
-        .tooltip span{color:#f9a825;font-weight:600;}
+        .marker:hover .tooltip, .marker:active .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+        .tooltip-score { color: #f9a825; font-weight: 600; display: block; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+        .tooltip span { color: #f9a825; font-weight: 600; }
         .reward-summary-box { background: var(--bg); border-radius: var(--radius-sm); padding: 12px; }
         .reward-item { display: inline-block; background: var(--surface); border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; margin: 3px 3px 3px 0; font-size: 11.5px; color: var(--text); }
         .reward-item span { font-weight: 600; color: #d84315; margin-left: 4px; }
         .next-reward-box { margin-top: 8px; font-size: 11.5px; color: var(--text2); border-top: 1px dashed var(--border2); padding-top: 8px; }
         .next-reward-box strong { color: var(--text); }
+
+        /* Daily Checkbox */
         .daily-cb-group { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border2); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 12px; }
         .cb-label { display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--text); }
         .cb-label input { cursor: pointer; }
 
-        /* ── SCAN SECTION ── */
-        .scan-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
-        .scan-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .scan-status-badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
-        .scan-status-badge.ready{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;}
-        .scan-status-badge.loading{background:#fff8e1;color:#f9a825;border-color:#ffe082;}
+        /* =========================================================
+           Template Matching Section
+           ========================================================= */
+        .scan-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .scan-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .scan-status-badge {
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: var(--surface2);
+            color: var(--text3);
+            border: 1px solid var(--border);
+        }
+        .scan-status-badge.ready { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+        .scan-status-badge.loading { background: #fff8e1; color: #f9a825; border-color: #ffe082; }
+        .scan-status-badge.error { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
 
-        .api-key-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-        .api-key-input { flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); font-family: inherit; font-size: 12px; color: var(--text); background: var(--bg); }
-        .api-key-input:focus { outline: none; border-color: #00838f; background: #fff; }
-        .api-key-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
-
-        .upload-zone { border: 2px dashed var(--border2); border-radius: var(--radius-sm); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg); position: relative; }
-        .upload-zone:hover{border-color:#00838f;background:#e0f2f1;}
+        .upload-zone {
+            border: 2px dashed var(--border2);
+            border-radius: var(--radius-sm);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg);
+            position: relative;
+        }
+        .upload-zone:hover { border-color: #00838f; background: #e0f2f1; }
         .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
         .upload-zone-icon { font-size: 32px; margin-bottom: 8px; }
         .upload-zone-text { font-size: 13px; color: var(--text2); }
-        .scan-preview-wrap { margin-top: 12px; display: none; }
-        .scan-preview-wrap.show { display: block; }
-        .scan-preview-img { max-width: 100%; max-height: 300px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: block; margin: 0 auto 10px; }
-        .btn-scan { background: #00838f; color: #fff; border-color: #00838f; font-size: 13px; padding: 10px 20px; width: 100%; justify-content: center; }
-        .btn-scan:disabled{background:var(--border2);border-color:var(--border2);color:#fff;cursor:not-allowed;}
-        .scan-progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 10px; overflow: hidden; display: none; }
-        .scan-progress-bar.show{display:block;}
-        .scan-progress-fill { height: 100%; background: #00838f; border-radius: 3px; width: 0%; transition: width 0.3s; }
+        .upload-zone-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
 
-        .detection-results { margin-top: 16px; display: none; }
-        .detection-results.show{display:block;}
-        .detection-results-title { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
-        .detection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-        .detection-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; display: flex; flex-direction: row; align-items: center; transition: box-shadow 0.2s; }
-        .detection-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.08);}
-        .detection-card-img { width: 60px; height: 60px; object-fit: contain; background: var(--bg); flex-shrink: 0; padding: 6px; }
-        .detection-card-body { flex: 1; padding: 8px 10px; min-width: 0; }
-        .detection-card-name { font-size: 11.5px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 6px; word-break: break-word; }
-        .detection-card-count-row { display: flex; align-items: center; gap: 4px; }
-        .detection-card-count-row .btn-c{width:24px;height:24px;font-size:14px;}
-        .detection-card-count-input { width: 44px; height: 24px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); text-align: center; font-size: 13px; font-weight: 700; color: var(--text); font-family: inherit; padding: 0; }
-        .detection-card-label { font-size: 10px; color: var(--text3); margin-left: 4px; }
-        .detection-card-confidence { font-size: 10px; color: #00838f; margin-top: 3px; }
-        .detection-card.not-found{opacity:0.4;}
-        .scan-log { margin-top: 10px; font-size: 11px; color: var(--text2); background: var(--bg); border-radius: var(--radius-sm); padding: 8px 12px; line-height: 1.8; display: none; white-space: pre-wrap; }
-        .scan-log.show{display:block;}
-        .scan-method-toggle { display: flex; gap: 6px; margin-bottom: 10px; }
-        .method-btn { flex: 1; padding: 7px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); font-size: 11px; font-family: inherit; cursor: pointer; color: var(--text2); transition: all 0.15s; text-align: center; }
-        .method-btn.active { background: #00838f; color: #fff; border-color: #00838f; font-weight: 600; }
+        .scan-preview-wrap {
+            margin-top: 12px;
+            display: none;
+        }
+        .scan-preview-wrap.show { display: block; }
+        .scan-preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            display: block;
+            margin-bottom: 10px;
+        }
+        .btn-scan {
+            background: #00838f;
+            color: #fff;
+            border-color: #00838f;
+            font-size: 13px;
+            padding: 10px 20px;
+            width: 100%;
+            justify-content: center;
+        }
+        .btn-scan:disabled { background: var(--border2); border-color: var(--border2); color: #fff; cursor: not-allowed; }
+
+        .scan-progress-bar {
+            height: 6px;
+            background: var(--surface2);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        .scan-progress-bar.show { display: block; }
+        .scan-progress-fill {
+            height: 100%;
+            background: #00838f;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Detection Result Cards */
+        .detection-results {
+            margin-top: 16px;
+            display: none;
+        }
+        .detection-results.show { display: block; }
+        .detection-results-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text2);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .detection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .detection-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0;
+            transition: box-shadow 0.2s;
+        }
+        .detection-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .detection-card-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            background: var(--bg);
+            flex-shrink: 0;
+            padding: 6px;
+        }
+        .detection-card-body {
+            flex: 1;
+            padding: 8px 10px;
+            min-width: 0;
+        }
+        .detection-card-name {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.3;
+            margin-bottom: 6px;
+            word-break: break-word;
+        }
+        .detection-card-count-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .detection-card-count-row .btn-c {
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+        }
+        .detection-card-count-input {
+            width: 36px;
+            height: 24px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface2);
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            font-family: inherit;
+            padding: 0;
+            -moz-appearance: textfield;
+        }
+        .detection-card-count-input::-webkit-outer-spin-button,
+        .detection-card-count-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .detection-card-count-input:focus { outline: none; border-color: #00838f; background: #fff; }
+        .detection-card-label {
+            font-size: 10px;
+            color: var(--text3);
+            margin-left: 4px;
+        }
+        .detection-card-confidence {
+            font-size: 10px;
+            color: #00838f;
+            margin-top: 3px;
+        }
+        .detection-card.not-found {
+            opacity: 0.45;
+        }
+        .detection-card.not-found .detection-card-count-input {
+            color: var(--text3);
+        }
+
+        .scan-log {
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--text3);
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            line-height: 1.8;
+            display: none;
+        }
+        .scan-log.show { display: block; }
+        .log-found { color: #2e7d32; font-weight: 600; }
+        .log-notfound { color: #b71c1c; }
     </style>
 </head>
+
 <body>
-<div class="page">
-    <div class="top-bar">
-        <div class="page-title">ตารางคำนวณคะแนนรายวัน</div>
-        <div class="top-actions">
-            <button class="btn" onclick="resetAll()">รีเซ็ตแต้ม</button>
-            <button class="btn btn-primary" onclick="downloadHTML()">สำรองไฟล์ HTML</button>
-        </div>
-    </div>
+    <div class="page">
 
-    <div class="profile-section">
-        <div class="profile-row" style="flex:1;">
-            <span style="font-size:13px;font-weight:600;white-space:nowrap;">โปรไฟล์:</span>
-            <select class="profile-select" id="profile-select" onchange="switchProfile(this.value)"></select>
-            <button class="btn btn-danger" onclick="deleteProfile()" style="padding:7px 10px;">ลบ</button>
-        </div>
-        <div class="profile-row" style="flex:1;">
-            <input type="text" class="input-profile-name" id="new-profile-name" placeholder="ชื่อโปรไฟล์ใหม่...">
-            <button class="btn" onclick="createNewProfile()">+ สร้างใหม่</button>
-        </div>
-        <div class="io-actions-row">
-            <button class="btn btn-io-export" onclick="exportProfilesJSON()">ส่งออกข้อมูล (.json)</button>
-            <button class="btn btn-io-import" onclick="document.getElementById('import-json-file').click()">นำเข้าข้อมูล</button>
-            <input type="file" id="import-json-file" accept=".json" onchange="importProfilesJSON(event)" style="display:none;">
-        </div>
-    </div>
-
-    <div class="banner">
-        <div>
-            <div class="banner-label">คะแนนรวมทั้งหมด</div>
-            <div class="banner-score" id="grand-total">0</div>
-        </div>
-        <div class="banner-right">
-            <div class="banner-sub" id="active-days">—</div>
-        </div>
-    </div>
-
-    <div class="progress-section">
-        <div class="progress-labels">
-            <span style="font-size:13px;font-weight:600;">ความคืบหน้ารางวัล</span>
-            <span id="progress-text" style="font-size:12px;font-weight:600;color:#00838f;">0 / 500,000</span>
-        </div>
-        <div class="progress-bar-container">
-            <div class="progress-fill" id="progress-fill"></div>
-            <div class="progress-markers" id="progress-markers"></div>
-        </div>
-        <div class="reward-summary-box">
-            <div style="font-size:12px;font-weight:600;margin-bottom:6px;">🎁 รางวัลสะสมที่ได้รับแล้วทั้งหมด:</div>
-            <div id="reward-list"><span style="font-size:11.5px;color:var(--text3);">ยังไม่ถึงเป้าหมายแรก (5,000 แต้ม)</span></div>
-            <div class="next-reward-box" id="next-reward"></div>
-        </div>
-    </div>
-
-    <div class="scan-section">
-        <div class="scan-title">
-            🔍 สแกนภาพอัตโนมัติ (คลังไอเทม)
-            <span class="scan-status-badge ready" id="cv-status">✓ พร้อมใช้งาน</span>
-        </div>
-
-        <div class="scan-method-toggle">
-            <div class="method-btn active" id="method-claude" onclick="setMethod('claude')">✨ Gemini AI <small style="display:block;font-size:9px;opacity:0.8;">(แม่นยำสูง · ซิงก์เวอร์ชันคลาวด์ v1beta)</small></div>
-            <div class="method-btn" id="method-cv" onclick="setMethod('cv')">🔬 Template Matching <small style="display:block;font-size:9px;opacity:0.8;">(ไม่ต้องใช้ API Key)</small></div>
-        </div>
-
-        <div id="claude-api-section">
-            <div class="api-key-label">🔑 Gemini API Key — ออกคีย์ฟรีที่ <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00838f;">aistudio.google.com/apikey</a></div>
-            <div class="api-key-row">
-                <input type="password" class="api-key-input" id="api-key-input" placeholder="AIzaSy...">
-                <button class="btn" onclick="saveApiKey()" style="white-space:nowrap;">บันทึก</button>
-                <button class="btn" onclick="toggleShowKey()" style="padding:8px 10px;">👁</button>
-            </div>
-            <div id="api-key-status" style="font-size:11px;color:var(--text3);margin-bottom:8px;"></div>
-        </div>
-
-        <div id="cv-api-section" style="display:none;">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;" id="cv-load-status">ระบบเปิดรับการจับคู่สเกลแบบ Multi-Scale...</div>
-        </div>
-
-        <div class="upload-zone" id="upload-zone">
-            <input type="file" id="scan-file-input" accept="image/*" onchange="onScanImageSelected(event)">
-            <div class="upload-zone-icon">📸</div>
-            <div class="upload-zone-text">อัปโหลดภาพ Screenshot ของคุณ</div>
-            <div class="upload-zone-sub">คลิก หรือ ลากไฟล์มาวาง · JPG, PNG</div>
-        </div>
-
-        <div class="scan-preview-wrap" id="scan-preview-wrap">
-            <img id="scan-preview-img" class="scan-preview-img" src="" alt="Preview">
-            <button class="btn btn-scan" id="btn-do-scan" onclick="doScan()">🔍 เริ่มสแกนหาไอเทม</button>
-            <div class="scan-progress-bar" id="scan-progress-bar">
-                <div class="scan-progress-fill" id="scan-progress-fill"></div>
+        <div class="top-bar">
+            <div class="page-title">ตารางคำนวณคะแนนรายวัน</div>
+            <div class="top-actions">
+                <button class="btn" onclick="resetAll()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+                    </svg>
+                    รีเซ็ตแต้ม
+                </button>
+                <button class="btn btn-primary" onclick="downloadHTML()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    สำรองไฟล์ HTML
+                </button>
             </div>
         </div>
 
-        <div class="detection-results" id="detection-results">
-            <div class="detection-results-title">📦 ผลการตรวจจับ — บันทึกลงตารางอัตโนมัติ</div>
-            <div class="detection-grid" id="detection-grid"></div>
+        <div class="profile-section">
+            <div class="profile-row" style="flex: 1;">
+                <span style="font-size:13px; font-weight:600; white-space:nowrap;">โปรไฟล์:</span>
+                <select class="profile-select" id="profile-select" onchange="switchProfile(this.value)"></select>
+                <button class="btn btn-danger" onclick="deleteProfile()" style="padding: 7px 10px;">ลบ</button>
+            </div>
+            <div class="profile-row" style="flex: 1;">
+                <input type="text" class="input-profile-name" id="new-profile-name" placeholder="ชื่อโปรไฟล์ใหม่...">
+                <button class="btn" onclick="createNewProfile()">+ สร้างใหม่</button>
+            </div>
+            <div class="io-actions-row">
+                <button class="btn btn-io-export" onclick="exportProfilesJSON()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                        <polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                    ส่งออกข้อมูล (.json)
+                </button>
+                <button class="btn btn-io-import" onclick="document.getElementById('import-json-file').click()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    นำเข้าข้อมูล
+                </button>
+                <input type="file" id="import-json-file" accept=".json" onchange="importProfilesJSON(event)" style="display: none;">
+            </div>
         </div>
-        <div class="scan-log" id="scan-log"></div>
-    </div>
 
-    <div class="note1">
-        <strong>หมายเหตุTop:</strong> กิลด์บริจาคได้วันละ 12 ครั้ง 5500 แต้ม / ปราบกิลด์ 3 ครั้ง / ฟาร์มเคออส 8 ครั้ง / ปราบผู้นำ 7 ครั้ง / ทดสอบทีม 20 ครั้ง / อารีน่า 113 ครั้ง / โดม 10 ครั้ง
-        <div class="daily-cb-group">
-            <label class="cb-label" style="font-weight:600;color:#00838f;"><input type="checkbox" id="cb-all-daily" onchange="toggleAllDaily(this.checked)"> All Day Daily</label>
-            <span style="color:var(--border2);">|</span>
-            <label class="cb-label"><input type="checkbox" class="cb-day" value="tue" onchange="toggleDayDaily('tue',this.checked)"> อังคาร</label>
-            <label class="cb-label"><input type="checkbox" class="cb-day" value="wed" onchange="toggleDayDaily('wed',this.checked)"> พุธ</label>
-            <label class="cb-label"><input type="checkbox" class="cb-day" value="thu" onchange="toggleDayDaily('thu',this.checked)"> พฤหัส</label>
-            <label class="cb-label"><input type="checkbox" class="cb-day" value="fri" onchange="toggleDayDaily('fri',this.checked)"> ศุกร์</label>
-            <label class="cb-label"><input type="checkbox" class="cb-day" value="sat" onchange="toggleDayDaily('sat',this.checked)"> เสาร์</label>
-            <label class="cb-label"><input type="checkbox" class="cb-day" value="sun" onchange="toggleDayDaily('sun',this.checked)"> อาทิตย์</label>
+        <div class="banner">
+            <div>
+                <div class="banner-label">คะแนนรวมทั้งหมด</div>
+                <div class="banner-score" id="grand-total">0</div>
+            </div>
+            <div class="banner-right">
+                <div class="banner-sub" id="active-days">—</div>
+            </div>
         </div>
+
+        <div class="progress-section">
+            <div class="progress-labels">
+                <span style="font-size:13px; font-weight:600;">ความคืบหน้ารางวัล</span>
+                <span id="progress-text" style="font-size:12px; font-weight:600; color:#00838f;">0 / 500,000</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-fill" id="progress-fill"></div>
+                <div class="progress-markers" id="progress-markers"></div>
+            </div>
+            <div class="reward-summary-box">
+                <div style="font-size:12px; font-weight:600; margin-bottom:6px;">🎁 รางวัลสะสมที่ได้รับแล้วทั้งหมด:</div>
+                <div id="reward-list">
+                    <span style="font-size:11.5px; color:var(--text3);">ยังไม่ถึงเป้าหมายแรก (5,000 แต้ม)</span>
+                </div>
+                <div class="next-reward-box" id="next-reward"></div>
+            </div>
+        </div>
+
+        <!-- =========================================================
+             Template Matching Section
+             ========================================================= -->
+        <div class="scan-section">
+            <div class="scan-title">
+                🔍 สแกนภาพอัตโนมัติ (Template Matching)
+                <span class="scan-status-badge loading" id="cv-status">กำลังโหลด OpenCV...</span>
+            </div>
+            <div class="upload-zone" id="upload-zone">
+                <input type="file" id="scan-file-input" accept="image/*" onchange="onScanImageSelected(event)">
+                <div class="upload-zone-icon">📸</div>
+                <div class="upload-zone-text">อัปโหลดภาพ Screenshot ของคุณ</div>
+                <div class="upload-zone-sub">คลิก หรือ ลากไฟล์มาวาง · รองรับ JPG, PNG</div>
+            </div>
+            <div class="scan-preview-wrap" id="scan-preview-wrap">
+                <img id="scan-preview-img" class="scan-preview-img" src="" alt="Preview">
+                <button class="btn btn-scan" id="btn-do-scan" onclick="doScan()" disabled>
+                    🔍 เริ่มสแกนหาไอเทม
+                </button>
+                <div class="scan-progress-bar" id="scan-progress-bar">
+                    <div class="scan-progress-fill" id="scan-progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="detection-results" id="detection-results">
+                <div class="detection-results-title">📦 ผลการตรวจจับ — แก้ไขจำนวนได้</div>
+                <div class="detection-grid" id="detection-grid"></div>
+            </div>
+
+            <div class="scan-log" id="scan-log"></div>
+        </div>
+
+        <div class="note1">
+            <strong>หมายเหตุTop:</strong> กิลด์บริจาคได้วันละ 12 ครั้ง 5500 แต้ม / ปราบกิลด์ 3 ครั้ง / ฟาร์มเคออส 8 ครั้ง / ปราบผู้นำ 7 ครั้ง / ทดสอบทีม 20 ครั้ง / อารีน่า 113 ครั้ง / โดม 10 ครั้ง
+            <div class="daily-cb-group">
+                <label class="cb-label" style="font-weight: 600; color: #00838f;">
+                    <input type="checkbox" id="cb-all-daily" onchange="toggleAllDaily(this.checked)"> All Day Daily
+                </label>
+                <span style="color: var(--border2);">|</span>
+                <label class="cb-label"><input type="checkbox" class="cb-day" value="tue" onchange="toggleDayDaily('tue', this.checked)"> อังคาร</label>
+                <label class="cb-label"><input type="checkbox" class="cb-day" value="wed" onchange="toggleDayDaily('wed', this.checked)"> พุธ</label>
+                <label class="cb-label"><input type="checkbox" class="cb-day" value="thu" onchange="toggleDayDaily('thu', this.checked)"> พฤหัส</label>
+                <label class="cb-label"><input type="checkbox" class="cb-day" value="fri" onchange="toggleDayDaily('fri', this.checked)"> ศุกร์</label>
+                <label class="cb-label"><input type="checkbox" class="cb-day" value="sat" onchange="toggleDayDaily('sat', this.checked)"> เสาร์</label>
+                <label class="cb-label"><input type="checkbox" class="cb-day" value="sun" onchange="toggleDayDaily('sun', this.checked)"> อาทิตย์</label>
+            </div>
+        </div>
+
+        <div class="legend">
+            <span>สี:</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span>ล็อคอิน</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#f9a825"></span>ไอเทมพิเศษ</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#d84315"></span>กิตส์/ดอรอง</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#00838f"></span>คริสตัลฟ้า</span>
+        </div>
+
+        <div class="days-grid" id="days-grid"></div>
+
+        <div class="note">
+            <strong>หมายเหตุ:</strong> อัญเชิญรูน &amp; วัตถุโบราณ → อังคาร &amp; เสาร์เท่านั้น · ลงแคนลับ → พฤหัส &amp; เสาร์เท่านั้น · ใช้เหรียญกิลด์ → พุธ &amp; อาทิตย์ · ส่งคริสตัล → อังคาร &amp; เสาร์ · ใช้กุญแจทอง → พฤหัสเท่านั้น · อารีน่า → ศุกร์เท่านั้น (อาทิตย์คัดขึ้นได้)
+        </div>
+
     </div>
 
-    <div class="legend">
-        <span>สี:</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span>ล็อคอิน</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#f9a825"></span>ไอเทมพิเศษ</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#d84315"></span>กิตส์/ดอรอง</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#00838f"></span>คริสตัลฟ้า</span>
-    </div>
+    <script>
+        // =========================================================
+        // Template Matching — ตั้งค่า Templates จาก GitHub
+        // =========================================================
 
-    <div class="days-grid" id="days-grid"></div>
+        // BASE URL ของรูป Template บน GitHub (raw)
+        // เปลี่ยน <USERNAME> และ <REPO> ให้ตรงกับของคุณ
+        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/<USERNAME>/<REPO>/main/";
 
-    <div class="note">
-        <strong>หมายเหตุ:</strong> อัญเชิญรูน &amp; วัตถุโบราณ → อังคาร &amp; เสาร์เท่านั้น · ลงแคนลับ → พฤหัส &amp; เสาร์เท่านั้น · ใช้เหรียญกิลด์ → พุธ &amp; อาทิตย์ · ส่งคริสตัล → อังคาร &amp; เสาร์ · ใช้กุญแจทอง → พฤหัสเท่านั้น · อารีน่า → ศุกร์เท่านั้น
-    </div>
-</div>
+        // รายการ Template ทั้งหมด: { file, name, matchLabel }
+        // matchLabel คือชื่อที่จะแสดงในการ์ด (อาจต่างจากชื่อใน daysData)
+        const templateDefs = [
+            { file: "BlessingRoy.JPG",    name: "คุ้มครองลอย" },
+            { file: "CrystalRed.JPG",     name: "ส่งคริสตัล 10 เม็ด" },
+            { file: "GoldenKey.JPG",       name: "กุญแจทอง" },
+            { file: "GuildBlueCoin.JPG",   name: "เหรียญกิลด์คริสตัลฟ้า" },
+            { file: "GuildCoin.JPG",       name: "เหรียญกิลด์" },
+            { file: "HammerRelic.JPG",     name: "โบราณคดีโบราณวัตถุ" },
+            { file: "PotionGh.JPG",        name: "ยาวิญญาณเวท" },
+            { file: "Rune.JPG",            name: "อัญเชิญรูน" },
+        ];
 
-<script>
-const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
+        // เก็บ HTMLImageElement ของ template ที่โหลดมาแล้ว
+        let loadedTemplates = {}; // { file: HTMLImageElement }
+        let cvReady = false;
+        let scanImageElement = null;
+        let detectionCounts = {}; // { file: number }
 
-const templateDefs = [
-    { file: "BlessingRoy.JPG",    name: "คุ้มครองลอย" },
-    { file: "CrystalRed.JPG",     name: "ส่งคริสตัล 10 เม็ด" },
-    { file: "GoldenKey.JPG",       name: "กุญแจทอง" },
-    { file: "GuildBlueCoin.JPG",   name: "เหรียญกิลด์คริสตัลฟ้า" },
-    { file: "GuildCoin.jpg",       name: "เหรียญกิลด์" },
-    { file: "HammerRelic.JPG",     name: "โบราณคดีโบราณวัตถุ" },
-    { file: "PotionGh.JPG",        name: "ยาวิญญาณเวท" },
-    { file: "Rune.JPG",            name: "อัญเชิญรูน" },
-];
-
-const nameToFile = {
-    "คุ้มครองลอย":           "BlessingRoy.JPG",
-    "ส่งคริสตัล 10 เม็ด":    "CrystalRed.JPG",
-    "กุญแจทอง":              "GoldenKey.JPG",
-    "เหรียญกิลด์คริสตัลฟ้า": "GuildBlueCoin.JPG",
-    "เหรียญกิลด์":           "GuildCoin.jpg",
-    "โบราณคดีโบราณวัตถุ":    "HammerRelic.JPG",
-    "ยาวิญญาณเวท":           "PotionGh.JPG",
-    "อัญเชิญรูน":            "Rune.JPG",
-};
-
-const CLAUDE_PROMPT = `You are an automated game scanner. Analyze this inventory image.
-Calculate and find numbers or counts under these specific keys:
-- คุ้มครองลอย
-- ส่งคริสตัล 10 เม็ด
-- กุญแจทอง
-- เหรียญกิลด์คริสตัลฟ้า
-- เหรียญกิลด์
-- โบราณคดีโบราณวัตถุ
-- ยาวิญญาณเวท
-- อัญเชิญรูน
-
-Rule: Convert scales (like 3.51K into 3510, 7.75K into 7750) to exact integers.
-Output format MUST be a single raw JSON object block ONLY. Do not write markdown, do not wrap in backticks.
-Example output structure: {"คุ้มครองลอย":12,"ส่งคริสตัล 10 เม็ด":552,"กุญแจทอง":9,"เหรียญกิลด์คริสตัลฟ้า":400,"เหรียญกิลด์":7750,"โบราณคดีโบราณวัตถุ":142,"ยาวิญญาณเวท":140,"อัญเชิญรูน":3510}`;
-
-let loadedTemplates = {};
-let cvReady = false;
-let scanImageElement = null;
-let scanImageBase64 = null;
-let detectionCounts = {};
-let currentMethod = 'claude';
-
-function setMethod(m) {
-    currentMethod = m;
-    document.getElementById('method-claude').className = 'method-btn' + (m==='claude'?' active':'');
-    document.getElementById('method-cv').className    = 'method-btn' + (m==='cv'?' active':'');
-    document.getElementById('claude-api-section').style.display = m==='claude'?'block':'none';
-    document.getElementById('cv-api-section').style.display     = m==='cv'?'block':'none';
-}
-
-function loadApiKey() {
-    const k = localStorage.getItem('gemini_api_key') || '';
-    document.getElementById('api-key-input').value = k;
-    updateApiKeyStatus(k);
-}
-function saveApiKey() {
-    const k = document.getElementById('api-key-input').value.trim();
-    localStorage.setItem('gemini_api_key', k);
-    updateApiKeyStatus(k);
-    alert(k ? '✓ บันทึก Gemini API Key แล้ว' : 'ลบ API Key เรียบร้อย');
-}
-function updateApiKeyStatus(k) {
-    const el = document.getElementById('api-key-status');
-    el.textContent = k ? `✓ API Key พร้อมใช้งาน` : '⚠ กรุณากรอกคีย์หลังบ้านเพื่อเริ่มต้นใช้งานผ่านระบบคลาวด์';
-    el.style.color = k ? '#2e7d32' : '#f9a825';
-}
-function toggleShowKey() {
-    const el = document.getElementById('api-key-input');
-    el.type = el.type === 'password' ? 'text' : 'password';
-}
-// ดึง API Key
-function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
-
-function onOpenCvReady() {
-    cvReady = true;
-    preloadTemplates();
-}
-async function preloadTemplates() {
-    let loaded = 0;
-    const proms = templateDefs.map(t => new Promise(res => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload  = () => { loadedTemplates[t.file] = img; loaded++; res(true); };
-        img.onerror = () => res(false);
-        img.src = GITHUB_RAW_BASE + t.file;
-    }));
-    await Promise.all(proms);
-}
-
-function onScanImageSelected(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        scanImageBase64 = dataUrl.split(',')[1];
-        const img = new Image();
-        img.onload = () => {
-            scanImageElement = img;
-            document.getElementById('scan-preview-img').src = dataUrl;
-            document.getElementById('scan-preview-wrap').classList.add('show');
-            document.getElementById('detection-results').classList.remove('show');
-            document.getElementById('scan-log').classList.remove('show');
-        };
-        img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-}
-
-async function doScan() {
-    if (!scanImageElement) return alert('กรุณาอัปโหลดภาพคลังไอเทมก่อนทำการสแกน');
-    if (currentMethod === 'claude') await doScanGemini();
-    else await doScanCV();
-}
-
-// ── อัปเดตสลับพาส Endpoint กลับไปใช้โครงสร้าง v1beta ──
-async function doScanGemini() {
-    const apiKey = getApiKey();
-    if (!apiKey) return alert('กรุณากรอก Gemini API Key ก่อนใช้งาน');
-
-    const btn = document.getElementById('btn-do-scan');
-    const pBar = document.getElementById('scan-progress-bar');
-    const pFill = document.getElementById('scan-progress-fill');
-    const log  = document.getElementById('scan-log');
-
-    btn.disabled = true;
-    btn.textContent = '🤖 กำลังอ่านข้อมูลหน้าจอคลังไอเทม...';
-    pBar.classList.add('show');
-    pFill.style.width = '30%';
-    log.classList.add('show');
-    log.innerHTML = '🤖 ระบบส่งข้อมูลภาพเข้าสู่คลาวด์เอ็นจิ้น...';
-
-    const mimeType = scanImageBase64.startsWith('/9j') ? 'image/jpeg' : 'image/png';
-
-    try {
-        // ใช้โครงสร้างโมเดลหลักผ่านเวอร์ชันทดสอบ v1beta ที่รองรับการสแกนภาพและอ่านพิกเซลตัวเลข
-        const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { inlineData: { mimeType: mimeType, data: scanImageBase64 } },
-                            { text: CLAUDE_PROMPT }
-                        ]
-                    }]
-                })
-            }
-        );
-
-        pFill.style.width = '75%';
-
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.error?.message || `HTTP Connection ${resp.status}`);
+        function onOpenCvReady() {
+            cvReady = true;
+            const badge = document.getElementById("cv-status");
+            badge.textContent = "OpenCV พร้อม";
+            badge.className = "scan-status-badge ready";
+            preloadTemplates();
         }
 
-        const data = await resp.json();
-        let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-        
-        // ล้างอักษรเกริ่นนำหรือกรอบ Markdown Backticks ป้องกัน JSON สตริงล่ม
-        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        
-        let result = JSON.parse(text);
+        async function preloadTemplates() {
+            const badge = document.getElementById("cv-status");
+            badge.textContent = "กำลังโหลด Templates...";
+            badge.className = "scan-status-badge loading";
 
-        detectionCounts = {};
-        const logLines = ['<span style="color:#00838f;font-weight:600;">✅ การประมวลผลผ่าน AI สำเร็จ:</span>'];
+            let loaded = 0;
+            const promises = templateDefs.map(t => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.onload = () => {
+                        loadedTemplates[t.file] = img;
+                        loaded++;
+                        resolve(true);
+                    };
+                    img.onerror = () => {
+                        console.warn("ไม่สามารถโหลด template:", t.file);
+                        resolve(false);
+                    };
+                    img.src = GITHUB_RAW_BASE + t.file;
+                });
+            });
 
-        for (const [name, count] of Object.entries(result)) {
-            const file = nameToFile[name];
-            if (!file) continue;
-            let finalVal = parseInt(count) || 0;
-            detectionCounts[file] = finalVal;
-            
-            syncDetectedCountToApp(name, finalVal);
+            await Promise.all(promises);
 
-            if (finalVal > 0)
-                logLines.push(`<span class="log-found">✓ ${name}: บันทึกค่า ${finalVal.toLocaleString()} ชิ้น</span>`);
-            else
-                logLines.push(`<span class="log-notfound">✗ ${name}: ไม่พบในรูป</span>`);
+            if (loaded > 0) {
+                badge.textContent = `✓ Templates โหลดแล้ว ${loaded}/${templateDefs.length}`;
+                badge.className = "scan-status-badge ready";
+            } else {
+                badge.textContent = "⚠ โหลด Templates ไม่ได้ — ตรวจสอบ URL";
+                badge.className = "scan-status-badge error";
+            }
         }
 
-        pFill.style.width = '100%';
-        log.innerHTML = logLines.join('\n');
-        renderDetectionCards();
-        document.getElementById('detection-results').classList.add('show');
+        function onScanImageSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-    } catch(e) {
-        log.innerHTML = `<span class="log-notfound">❌ เกิดข้อผิดพลาดทางเทคนิค: ${e.message}</span>`;
-    }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    scanImageElement = img;
+                    const preview = document.getElementById("scan-preview-img");
+                    preview.src = e.target.result;
+                    document.getElementById("scan-preview-wrap").classList.add("show");
+                    document.getElementById("btn-do-scan").disabled = !cvReady;
+                    document.getElementById("detection-results").classList.remove("show");
+                    document.getElementById("scan-log").classList.remove("show");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
 
-    btn.disabled = false;
-    btn.textContent = '🔍 สแกนอีกครั้ง';
-    render();
-}
+        // =========================================================
+        // Tesseract worker (สร้างครั้งเดียว)
+        // =========================================================
+        let ocrWorker = null;
+        async function getOcrWorker() {
+            if (ocrWorker) return ocrWorker;
+            ocrWorker = await Tesseract.createWorker('eng', 1, { logger: () => {} });
+            await ocrWorker.setParameters({
+                tessedit_char_whitelist: '0123456789,./KkMm ',
+                tessedit_pageseg_mode: '7',  // single line
+            });
+            return ocrWorker;
+        }
 
-async function doScanCV() {
-    if (!cvReady) return alert('ระบบสแกนแบบดั้งเดิมยังโหลดไลบรารีไม่สมบูรณ์');
-    const btn = document.getElementById('btn-do-scan');
-    const pBar = document.getElementById('scan-progress-bar');
-    const pFill = document.getElementById('scan-progress-fill');
-    btn.disabled = true;
-    pBar.classList.add('show');
-
-    detectionCounts = {};
-    const srcCanvas = document.createElement('canvas');
-    srcCanvas.width  = scanImageElement.naturalWidth;
-    srcCanvas.height = scanImageElement.naturalHeight;
-    srcCanvas.getContext('2d').drawImage(scanImageElement, 0, 0);
-
-    let logLines = [];
-    const total = templateDefs.length;
-
-    try {
-        const src = cv.imread(srcCanvas);
-        for (let ti = 0; ti < total; ti++) {
-            const tDef = templateDefs[ti];
-            pFill.style.width = Math.round((ti/total)*100) + '%';
-            btn.textContent = `⏳ วิเคราะห์ภาพไอเทม (${ti+1}/${total})`;
-            await new Promise(r => setTimeout(r, 15));
-
-            const tmplImg = loadedTemplates[tDef.file];
-            if (!tmplImg || tmplImg.width === 60) {
-                logLines.push("<span>✗ ข้ามการตรวจจับวัตถุเนื่องจากโครงสร้างพิกเซลล้มเหลว</span>");
-                continue;
+        // แปลง text → number รองรับ 1,234 / 1.2K / 1M
+        function parseOcrNumber(text) {
+            const clean = text.replace(/\s/g, '').replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
+            const km = clean.match(/(\d[\d,.]*)([KkMm])/);
+            if (km) {
+                const base = parseFloat(km[1].replace(/,/g, ''));
+                return Math.round(base * (km[2].toLowerCase() === 'k' ? 1000 : 1000000));
             }
+            const nums = clean.match(/\d[\d,]*/g);
+            if (nums && nums.length > 0) {
+                return parseInt(nums.sort((a, b) => b.length - a.length)[0].replace(/,/g, ''), 10) || 0;
+            }
+            return 0;
+        }
 
-            const tc = document.createElement('canvas');
-            tc.width = tmplImg.naturalWidth; tc.height = tmplImg.naturalHeight;
-            tc.getContext('2d').drawImage(tmplImg, 0, 0);
+        // ทำ OCR บน canvas หนึ่งอัน
+        async function ocrCanvas(canvas) {
+            try {
+                const worker = await getOcrWorker();
+                const { data: { text } } = await worker.recognize(canvas);
+                return parseOcrNumber(text);
+            } catch(e) { return 0; }
+        }
 
-            let bestVal = -Infinity, bestMatches = [];
-            const tmpl = cv.imread(tc);
-            
-            const scales = [0.2, 0.35, 0.5, 0.65, 0.8, 1.0, 1.2, 1.4];
-            for (const scale of scales) {
-                const tw = Math.round(tmplImg.naturalWidth * scale);
-                const th = Math.round(tmplImg.naturalHeight * scale);
-                if (tw < 6 || th < 6 || tw > srcCanvas.width || th > srcCanvas.height) continue;
-                
-                const tr = new cv.Mat();
-                cv.resize(tmpl, tr, new cv.Size(tw, th));
-                const res = new cv.Mat();
-                cv.matchTemplate(src, tr, res, cv.TM_CCOEFF_NORMED);
-                const minMax = cv.minMaxLoc(res);
-                const matches = getMatchPositions(res, 0.56, tw, th);
-                
-                if (minMax.maxVal > bestVal) { 
-                    bestVal = minMax.maxVal; 
-                    bestMatches = matches;
+        // สร้าง canvas crop จาก srcCanvas ที่ (rx,ry,rw,rh) แล้ว preprocess หลายแบบ
+        function makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode) {
+            const SCALE = 4; // scale up 4x เพื่อความชัด
+            const c = document.createElement('canvas');
+            c.width  = rw * SCALE;
+            c.height = rh * SCALE;
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(srcCanvas, rx, ry, rw, rh, 0, 0, c.width, c.height);
+
+            const imgData = ctx.getImageData(0, 0, c.width, c.height);
+            const d = imgData.data;
+
+            if (mode === 'dark_bg') {
+                // ตัวเลขสีขาว/เหลืองบนพื้นมืด → invert แล้ว threshold
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                    const v = g > 160 ? 0 : 255; // ตัวสว่าง→ดำ, พื้นมืด→ขาว
+                    d[i] = d[i+1] = d[i+2] = v;
                 }
-                tr.delete(); res.delete();
+            } else if (mode === 'light_bg') {
+                // ตัวเลขสีเข้มบนพื้นขาว → threshold ตรง
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                    const v = g < 128 ? 0 : 255;
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else if (mode === 'yellow') {
+                // ดึงเฉพาะ channel สีเหลือง (R สูง, G สูง, B ต่ำ)
+                for (let i = 0; i < d.length; i += 4) {
+                    const isYellow = d[i] > 150 && d[i+1] > 120 && d[i+2] < 100;
+                    const v = isYellow ? 0 : 255;
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else {
+                // raw grayscale
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
+                    d[i] = d[i+1] = d[i+2] = g;
+                }
             }
-            tmpl.delete();
-
-            let finalCount = bestMatches.length;
-            detectionCounts[tDef.file] = finalCount;
-            syncDetectedCountToApp(tDef.name, finalCount);
-
-            if (finalCount > 0)
-                logLines.push(`<span class="log-found">✓ พบบล็อกวัตถุของ ${tDef.name} จำนวน ${finalCount} ช่อง</span>`);
-            else
-                logLines.push(`<span class="log-notfound">✗ ค้นหาพื้นที่ไอคอน ${tDef.name} ไม่พบบนหน้าจอ</span>`);
+            ctx.putImageData(imgData, 0, 0);
+            return c;
         }
-        src.delete();
-    } catch(e) {
-        console.error(e);
-    }
 
-    pFill.style.width = '100%';
-    renderDetectionCards();
-    document.getElementById('scan-log').innerHTML = logLines.join('\n');
-    document.getElementById('scan-log').classList.add('show');
-    document.getElementById('detection-results').classList.add('show');
-    btn.disabled = false;
-    btn.textContent = '🔍 สแกนอีกครั้ง';
-    render();
-}
+        // OCR บริเวณรอบๆ icon หลายตำแหน่ง + หลาย mode
+        async function ocrAroundMatch(srcCanvas, matchX, matchY, tmplW, tmplH) {
+            const W = srcCanvas.width, H = srcCanvas.height;
 
-function syncDetectedCountToApp(aiName, value) {
-    const counts = getCounts();
-    daysData.forEach(day => {
-        day.items.forEach((item, idx) => {
-            if (aiName === "คุ้มครองลอย" && item.label === "ใช้การคุ้มครองลอย 1 ชิ้น") counts[day.id+'_'+idx] = value;
-            if (aiName === "ส่งคริสตัล 10 เม็ด" && (item.label === "ส่งคริสตัล 10 เม็ด ให้กับปราชญ์" || item.label === "ส่งคริสตัลพลัง 10 เม็ด ให้กับปริญญ์")) counts[day.id+'_'+idx] = value;
-            if (aiName === "กุญแจทอง" && item.label === "ใช้กุญแจทอง 1 ดอก") counts[day.id+'_'+idx] = value;
-            if (aiName === "เหรียญกิลด์คริสตัลฟ้า" && (item.label === "ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ" || item.label === "เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ")) counts[day.id+'_'+idx] = value;
-            if (aiName === "เหรียญกิลด์" && item.label === "ใช้เหรียญกิลด์ 1000 เหรียญ") counts[day.id+'_'+idx] = Math.floor(value / 1000);
-            if (aiName === "โบราณคดีโบราณวัตถุ" && item.label === "โบราณคดีโบราณวัตถุ 1 ครั้ง") counts[day.id+'_'+idx] = value;
-            if (aiName === "ยาวิญญาณเวท" && item.label === "ใช้ยาวิญญาณเวท 1 ขวด") counts[day.id+'_'+idx] = value;
-            if (aiName === "อัญเชิญรูน" && item.label === "อัญเชิญรูน 1 ครั้ง") counts[day.id+'_'+idx] = value;
+            // กำหนดพื้นที่ค้นหาตัวเลขรอบๆ icon
+            const pw = tmplW, ph = tmplH;
+            const regions = [
+                // ใต้ icon (ตัวเลขมักอยู่ใต้ไอคอน)
+                { x: matchX - Math.round(pw*0.3), y: matchY + ph,               w: pw + Math.round(pw*0.6), h: Math.round(ph*0.8) },
+                // มุมขวาล่าง (badge จำนวนเล็ก)
+                { x: matchX + Math.round(pw*0.4), y: matchY + Math.round(ph*0.5), w: Math.round(pw*0.9),     h: Math.round(ph*0.6) },
+                // ขวาของ icon
+                { x: matchX + pw,                 y: matchY,                     w: Math.round(pw*1.5),      h: ph },
+                // ทั้ง icon + ใต้ icon (crop กว้างๆ)
+                { x: matchX - Math.round(pw*0.2), y: matchY,                     w: pw + Math.round(pw*0.4), h: ph + Math.round(ph*0.9) },
+                // บน icon (บางเกมแสดงเลขด้านบน)
+                { x: matchX - Math.round(pw*0.2), y: matchY - Math.round(ph*0.5), w: pw + Math.round(pw*0.4), h: Math.round(ph*0.6) },
+            ];
+
+            const modes = ['dark_bg', 'yellow', 'light_bg', 'raw'];
+
+            for (const reg of regions) {
+                const rx = Math.max(0, reg.x), ry = Math.max(0, reg.y);
+                const rw = Math.min(reg.w, W - rx), rh = Math.min(reg.h, H - ry);
+                if (rw < 6 || rh < 6) continue;
+
+                for (const mode of modes) {
+                    const crop = makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode);
+                    const num = await ocrCanvas(crop);
+                    if (num > 0 && num < 10000000) return num; // sanity check
+                }
+            }
+            return 0;
+        }
+
+        // =========================================================
+        // ฟังก์ชัน Template Matching หลัก + OCR
+        // =========================================================
+        async function doScan() {
+            if (!cvReady || !scanImageElement) return;
+
+            const btn = document.getElementById("btn-do-scan");
+            btn.disabled = true;
+            btn.textContent = "⏳ กำลังสแกน...";
+
+            const progressBar = document.getElementById("scan-progress-bar");
+            const progressFill = document.getElementById("scan-progress-fill");
+            progressBar.classList.add("show");
+            progressFill.style.width = "0%";
+
+            detectionCounts = {};
+
+            // วาดภาพใหญ่ลง canvas
+            const srcCanvas = document.createElement("canvas");
+            srcCanvas.width = scanImageElement.naturalWidth;
+            srcCanvas.height = scanImageElement.naturalHeight;
+            const srcCtx = srcCanvas.getContext("2d");
+            srcCtx.drawImage(scanImageElement, 0, 0);
+
+            // โหลด OCR worker ล่วงหน้า
+            btn.textContent = "⏳ โหลด OCR...";
+            await getOcrWorker();
+
+            let logLines = [];
+            const total = templateDefs.length;
+
+            for (let ti = 0; ti < total; ti++) {
+                const tDef = templateDefs[ti];
+                const pct = Math.round((ti / total) * 100);
+                progressFill.style.width = pct + "%";
+                btn.textContent = `⏳ สแกน ${ti+1}/${total}: ${tDef.name}`;
+
+                await new Promise(r => setTimeout(r, 10));
+
+                const tmplImg = loadedTemplates[tDef.file];
+                if (!tmplImg) {
+                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่มี template</span>`);
+                    detectionCounts[tDef.file] = 0;
+                    continue;
+                }
+
+                const tmplCanvas = document.createElement("canvas");
+                tmplCanvas.width = tmplImg.naturalWidth;
+                tmplCanvas.height = tmplImg.naturalHeight;
+                tmplCanvas.getContext("2d").drawImage(tmplImg, 0, 0);
+
+                const THRESHOLD = 0.72;
+                let bestVal = -Infinity;
+                // เก็บทุก match position ของ scale ที่ดีที่สุด
+                let bestMatches = []; // [{x, y, w, h, val}]
+                let bestScaleW = 0, bestScaleH = 0;
+
+                try {
+                    const src = cv.imread(srcCanvas);
+                    const tmpl = cv.imread(tmplCanvas);
+                    const scales = [0.5, 0.75, 1.0, 1.25, 1.5];
+
+                    for (const scale of scales) {
+                        const tw = Math.round(tmplImg.naturalWidth * scale);
+                        const th = Math.round(tmplImg.naturalHeight * scale);
+                        if (tw < 8 || th < 8 || tw > srcCanvas.width || th > srcCanvas.height) continue;
+
+                        const tmplResized = new cv.Mat();
+                        cv.resize(tmpl, tmplResized, new cv.Size(tw, th));
+
+                        const result = new cv.Mat();
+                        cv.matchTemplate(src, tmplResized, result, cv.TM_CCOEFF_NORMED);
+
+                        const { maxVal } = cv.minMaxLoc(result);
+                        const matches = getMatchPositions(result, THRESHOLD, tw, th);
+
+                        if (maxVal > bestVal) {
+                            bestVal = maxVal;
+                            bestMatches = matches.map(m => ({ ...m, w: tw, h: th }));
+                            bestScaleW = tw;
+                            bestScaleH = th;
+                        }
+
+                        tmplResized.delete();
+                        result.delete();
+                    }
+
+                    src.delete();
+                    tmpl.delete();
+
+                } catch (err) {
+                    console.error("Template matching error:", tDef.file, err);
+                }
+
+                if (bestMatches.length === 0) {
+                    detectionCounts[tDef.file] = 0;
+                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่พบในภาพ</span>`);
+                    continue;
+                }
+
+                // อ่านตัวเลขจากตำแหน่ง match แรก (ที่ confidence สูงสุด)
+                btn.textContent = `🔢 OCR: ${tDef.name}`;
+                await new Promise(r => setTimeout(r, 5));
+
+                const best = bestMatches[0];
+                let ocrNum = await ocrAroundMatch(srcCanvas, best.x, best.y, best.w, best.h);
+
+                // ถ้า OCR ไม่ได้ตัวเลข ใช้จำนวน match แทน
+                const finalCount = ocrNum > 0 ? ocrNum : bestMatches.length;
+                detectionCounts[tDef.file] = finalCount;
+
+                const ocrNote = ocrNum > 0
+                    ? `📖 OCR อ่านได้: <strong>${finalCount.toLocaleString()}</strong>`
+                    : `🔢 พบไอคอน ${bestMatches.length} จุด (OCR ไม่ได้เลข)`;
+
+                logLines.push(`<span class="log-found">✓ ${tDef.name} — ${ocrNote} (conf: ${(bestVal*100).toFixed(1)}%)</span>`);
+            }
+
+            progressFill.style.width = "100%";
+            renderDetectionCards();
+            document.getElementById("scan-log").innerHTML = logLines.join("<br>");
+            document.getElementById("scan-log").classList.add("show");
+            document.getElementById("detection-results").classList.add("show");
+
+            btn.disabled = false;
+            btn.textContent = "🔍 สแกนอีกครั้ง";
+        }
+
+        // คืน array ของตำแหน่ง match (พร้อม NMS)
+        function getMatchPositions(resultMat, threshold, tmplW, tmplH) {
+            const data = resultMat.data32F;
+            const cols = resultMat.cols;
+            const rows = resultMat.rows;
+            const visited = new Uint8Array(cols * rows);
+            const minDist = Math.max(tmplW, tmplH) * 0.5;
+            const candidates = [];
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const val = data[r * cols + c];
+                    if (val >= threshold) candidates.push({ r, c, val });
+                }
+            }
+            candidates.sort((a, b) => b.val - a.val);
+
+            const results = [];
+            for (const pt of candidates) {
+                const idx = pt.r * cols + pt.c;
+                if (visited[idx]) continue;
+                results.push({ x: pt.c, y: pt.r, val: pt.val });
+                const r0 = Math.max(0, Math.round(pt.r - minDist));
+                const r1 = Math.min(rows - 1, Math.round(pt.r + minDist));
+                const c0 = Math.max(0, Math.round(pt.c - minDist));
+                const c1 = Math.min(cols - 1, Math.round(pt.c + minDist));
+                for (let rr = r0; rr <= r1; rr++)
+                    for (let cc = c0; cc <= c1; cc++)
+                        visited[rr * cols + cc] = 1;
+            }
+            return results;
+        }
+
+        // (compat alias เดิม)
+        function countMatches(resultMat, threshold, tmplW, tmplH) {
+            return getMatchPositions(resultMat, threshold, tmplW, tmplH).length;
+        }
+
+        // แสดง Cards ผลการตรวจจับ
+        function renderDetectionCards() {
+            const grid = document.getElementById("detection-grid");
+            grid.innerHTML = "";
+
+            templateDefs.forEach(tDef => {
+                const count = detectionCounts[tDef.file] || 0;
+                const imgSrc = loadedTemplates[tDef.file] ? loadedTemplates[tDef.file].src : "";
+
+                const card = document.createElement("div");
+                card.className = "detection-card" + (count === 0 ? " not-found" : "");
+                card.id = "dcard_" + tDef.file.replace(/\./g, "_");
+
+                card.innerHTML = `
+                    <img class="detection-card-img" src="${imgSrc}" alt="${tDef.name}" onerror="this.style.display='none'">
+                    <div class="detection-card-body">
+                        <div class="detection-card-name">${tDef.name}</div>
+                        <div class="detection-card-count-row">
+                            <button class="btn-c" onclick="changeDetection('${tDef.file}', -1)" aria-label="ลด">−</button>
+                            <input class="detection-card-count-input" 
+                                id="dcnt_${tDef.file.replace(/\./g,'_')}" 
+                                type="number" min="0" value="${count}"
+                                onchange="setDetection('${tDef.file}', parseInt(this.value)||0)"
+                                oninput="setDetection('${tDef.file}', parseInt(this.value)||0)">
+                            <button class="btn-c" onclick="changeDetection('${tDef.file}', 1)" aria-label="เพิ่ม">+</button>
+                            <span class="detection-card-label">ชิ้น</span>
+                        </div>
+                        <div class="detection-card-confidence" id="dconf_${tDef.file.replace(/\./g,'_')}">
+                            ${count > 0 ? `🟢 จำนวน: ${count.toLocaleString()} ชิ้น` : "⚪ ไม่พบในภาพ"}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function changeDetection(file, delta) {
+            detectionCounts[file] = Math.max(0, (detectionCounts[file] || 0) + delta);
+            const id = "dcnt_" + file.replace(/\./g, "_");
+            const el = document.getElementById(id);
+            if (el) el.value = detectionCounts[file];
+            updateDetectionCardStyle(file);
+        }
+
+        function setDetection(file, val) {
+            detectionCounts[file] = Math.max(0, val);
+            updateDetectionCardStyle(file);
+        }
+
+        function updateDetectionCardStyle(file) {
+            const count = detectionCounts[file] || 0;
+            const cardId = "dcard_" + file.replace(/\./g, "_");
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.className = "detection-card" + (count === 0 ? " not-found" : "");
+            }
+            const confId = "dconf_" + file.replace(/\./g, "_");
+            const confEl = document.getElementById(confId);
+            if (confEl) {
+                confEl.textContent = count > 0 ? `🟢 จำนวน ${count} ชิ้น` : "⚪ ไม่พบในภาพ";
+            }
+        }
+
+        // =========================================================
+        // Drag & Drop support
+        // =========================================================
+        const uploadZone = document.getElementById("upload-zone");
+        uploadZone.addEventListener("dragover", e => { e.preventDefault(); uploadZone.style.borderColor = "#00838f"; });
+        uploadZone.addEventListener("dragleave", () => { uploadZone.style.borderColor = ""; });
+        uploadZone.addEventListener("drop", e => {
+            e.preventDefault();
+            uploadZone.style.borderColor = "";
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith("image/")) {
+                const fakeEvent = { target: { files: [file] } };
+                onScanImageSelected(fakeEvent);
+            }
         });
-    });
-    saveToStorage();
-}
 
-function getMatchPositions(resultMat, threshold, tmplW, tmplH) {
-    const data = resultMat.data32F, cols = resultMat.cols, rows = resultMat.rows;
-    const visited = new Uint8Array(cols * rows);
-    const minDist = Math.max(tmplW, tmplH) * 0.7;
-    const candidates = [];
-    for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) { const v=data[r*cols+c]; if(v>=threshold) candidates.push({r,c,v}); }
-    candidates.sort((a,b)=>b.v-a.v);
-    const results = [];
-    for (const pt of candidates) {
-        if (visited[pt.r*cols+pt.c]) continue;
-        results.push({x:pt.c, y:pt.r, val:pt.v});
-        const r0=Math.max(0,Math.round(pt.r-minDist)), r1=Math.min(rows-1,Math.round(pt.r+minDist));
-        const c0=Math.max(0,Math.round(pt.c-minDist)), c1=Math.min(cols-1,Math.round(pt.c+minDist));
-        for(let rr=r0;rr<=r1;rr++) for(let cc=c0;cc<=c1;cc++) visited[rr*cols+cc]=1;
-    }
-    return results;
-}
+        // =========================================================
+        // Reward Milestones
+        // =========================================================
+        const rewardMilestones = [
+            { score: 5000, rewards: { "เคออส": 500, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 10000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 50, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 15000, rewards: { "กุญแจเวท": 5, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 25000, rewards: { "เคออส": 1000, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 30000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 100, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 40000, rewards: { "กุญแจเวท": 15, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 50000, rewards: { "เคออส": 1500, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 65000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 150, "เหรียญกิลด์คริสตันสีฟ้า": 100 } },
+            { score: 80000, rewards: { "กล่องสมุนตำนาน": 1, "เหรียญกิลด์คริสตันสีฟ้า": 300 } },
+            { score: 100000, rewards: { "เคออส": 2000, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 120000, rewards: { "ม้วนคำภีร์เร่งความเร็ว": 200, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 150000, rewards: { "หีบเลือกสมุนแฟรี่": 1, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+            { score: 180000, rewards: { "ถุงโชคเหรียญทองมืด": 2, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 210000, rewards: { "กุญแจเงิน": 30, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 250000, rewards: { "หินปลุก": 3, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+            { score: 300000, rewards: { "ถุงโชคเหรียญทองมืด": 2, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 400000, rewards: { "กุญแจทอง": 15, "เหรียญกิลด์คริสตันสีฟ้า": 200 } },
+            { score: 500000, rewards: { "หินปลุก": 3, "แพ็คเลือกปราช": 1, "เหรียญกิลด์คริสตันสีฟ้า": 400 } },
+        ];
 
-function renderDetectionCards() {
-    const grid = document.getElementById('detection-grid');
-    grid.innerHTML = '';
-    templateDefs.forEach(tDef => {
-        const count = detectionCounts[tDef.file] || 0;
-        const imgSrc = GITHUB_RAW_BASE + tDef.file;
-        const card = document.createElement('div');
-        card.className = 'detection-card' + (count===0?' not-found':'');
-        card.id = 'dcard_' + tDef.file.replace(/[\.\-\s\(\)]/g,'_');
-        card.innerHTML = `
-            <img class="detection-card-img" src="${imgSrc}" alt="${tDef.name}" onerror="this.style.display='none'">
-            <div class="detection-card-body">
-                <div class="detection-card-name">${tDef.name}</div>
-                <div class="detection-card-count-row">
-                    <button class="btn-c" onclick="changeDetection('${tDef.file}',-1)">−</button>
-                    <input class="detection-card-count-input" id="dcnt_${tDef.file.replace(/[\.\-\s\(\)]/g,'_')}"
-                        type="number" min="0" value="${count}"
-                        onchange="setDetection('${tDef.file}',parseInt(this.value)||0)"
-                        oninput="setDetection('${tDef.file}',parseInt(this.value)||0)">
-                    <button class="btn-c" onclick="changeDetection('${tDef.file}', 1)">+</button>
-                    <span class="detection-card-label">ชิ้น</span>
-                </div>
-                <div class="detection-card-confidence" id="dconf_${tDef.file.replace(/[\.\-\s\(\)]/g,'_')}">
-                    ${count>0?`🟢 บันทึกแล้ว ${count.toLocaleString()} ชิ้น`:"⚪ ไม่พบในภาพ"}
-                </div>
-            </div>`;
-        grid.appendChild(card);
-    });
-}
-function changeDetection(file, delta) {
-    detectionCounts[file] = Math.max(0,(detectionCounts[file]||0)+delta);
-    const id = file.replace(/[\.\-\s\(\)]/g,'_');
-    const el = document.getElementById('dcnt_'+id); if(el) el.value=detectionCounts[file];
-    const tDef = templateDefs.find(t => t.file === file);
-    if (tDef) syncDetectedCountToApp(tDef.name, detectionCounts[file]);
-    updateDetectionCardStyle(file);
-    render();
-}
-function setDetection(file, val) { 
-    detectionCounts[file]=Math.max(0,val); 
-    const tDef = templateDefs.find(t => t.file === file);
-    if (tDef) syncDetectedCountToApp(tDef.name, detectionCounts[file]);
-    updateDetectionCardStyle(file); 
-    render();
-}
-function updateDetectionCardStyle(file) {
-    const count = detectionCounts[file]||0;
-    const id = file.replace(/[\.\-\s\(\)]/g,'_');
-    const card = document.getElementById('dcard_'+id);
-    if(card) card.className='detection-card'+(count===0?' not-found':'');
-    const conf = document.getElementById('dconf_'+id);
-    if(conf) conf.textContent = count>0?`🟢 บันทึกแล้ว ${count.toLocaleString()} ชิ้น`:"⚪ ไม่พบในภาพ";
-}
+        const dailyTargetValues = {
+            "ล็อคอิน": 1,
+            "ผ่านด่านฟาร์มเคออส 1 ครั้ง": 8,
+            "ฟาร์มการปราบผู้นำ 1 ครั้ง": 7,
+            "ผ่านด่านการทดสอบทีม 1 ครั้ง": 20,
+            "บริจาคกิลด์ 1 ครั้ง": 12,
+            "ทำการต่อรองราคากิลด์ 1 ครั้ง": 1,
+            "ฟาร์มการปราบกิลด์ 1 ครั้ง": 3,
+            "สงครามโดม 1 ครั้ง": 10,
+            "ชนะในสงครามโดม 1 ครั้ง": 10,
+            "ชนะอารีน่า 1 ครั้ง": 130,
+            "อารีน่า 1 ครั้ง": 130
+        };
 
-const daysData=[
-    {id:"tue",name:"อังคาร",cls:"hd-tue",items:[{label:"ล็อคอิน",pts:3000,color:"green"},{label:"ผ่านด่านฟาร์มเคออส 1 ครั้ง",pts:600,color:"none"},{label:"ฟาร์มการปราบผู้นำ 1 ครั้ง",pts:800,color:"none"},{label:"อัญเชิญรูน 1 ครั้ง",pts:60,color:"yellow"},{label:"โบราณคดีโบราณวัตถุ 1 ครั้ง",pts:80,color:"none"},{label:"ส่งคริสตัล 10 เม็ด ให้กับปราชญ์",pts:10,color:"none"},{label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},{label:"เติมเงิน 1 บาท",pts:50,color:"none"}]},
-    {id:"wed",name:"พุธ",cls:"hd-wed",items:[{label:"ล็อคอิน",pts:3000,color:"green"},{label:"ผ่านด่านการทดสอบทีม 1 ครั้ง",pts:800,color:"none"},{label:"บริจาคกิลด์ 1 ครั้ง",pts:400,color:"none"},{label:"ทำการต่อรองราคากิลด์ 1 ครั้ง",pts:1000,color:"orange"},{label:"ฟาร์มการปราบกิลด์ 1 ครั้ง",pts:800,color:"none"},{label:"ใช้เหรียญกิลด์ 1000 เหรียญ",pts:50,color:"none"},{label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},{label:"เติมเงิน 1 บาท",pts:50,color:"none"}]},
-    {id:"thu",name:"พฤหัส",cls:"hd-thu",items:[{label:"ล็อคอิน",pts:3000,color:"green"},{label:"ใช้กุญแจเวท 1 อัน",pts:100,color:"yellow"},{label:"ใช้การคุ้มครองลอย 1 ชิ้น",pts:2000,color:"none"},{label:"ใช้ความโปรดปรานของโนคอส 1 ชิ้น",pts:2000,color:"none"},{label:"ใช้ความโปรดปรานของโนคอส 1 ชั้น ",pts:2000,color:"none"},{label:"ใช้ความโปรดปรานจากโนคอส 1 ชั้น",pts:2000,color:"none"},{label:"ใช้แก่นพลังมืด 100ชิ้น",pts:80,color:"none"},{label:"ใช้กุญแจทอง 1 ดอก",pts:500,color:"none"},{label:"ใช้กุญแจเงิน 1 ดอก",pts:50,color:"yellow"},{label:"เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},{label:"เติมเงิน 1 บาท",pts:50,color:"none"}]},
-    {id:"fri",name:"ศุกร์",cls:"hd-fri",items:[{label:"ล็อคอิน",pts:3000,color:"green"},{label:"อารีน่า 1 ครั้ง",pts:600,color:"none"},{label:"ชนะอารีน่า 1 ครั้ง",pts:200,color:"none"},{label:"สงครามโดม 1 ครั้ง",pts:1000,color:"none"},{label:"ชนะในสงครามโดม 1 ครั้ง",pts:300,color:"none"},{label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},{label:"เติมเงิน 1 บาท",pts:50,color:"none"}]},
-    {id:"sat",name:"เสาร์",cls:"hd-sat",items:[{label:"ล็อคอิน",pts:3000,color:"green"},{label:"ใช้กุญแจเวท 1 อัน",pts:100,color:"yellow"},{label:"ใช้การคุ้มครองลอย 1 ชิ้น",pts:2000,color:"none"},{label:"ใช้ความโปรดปรานของโนคอส 1 ชิ้น",pts:2000,color:"none"},{label:"ใช้ความโปรดปรานของโนคอส 1 ชั้น ",pts:2000,color:"none"},{label:"ใช้ความโปรดปรานจากโนคอส 1 ชั้น",pts:2000,color:"none"},{label:"ใช้ยาวิญญาณเวท 1 ขวด",pts:20,color:"none"},{label:"ใช้แก่นพลังมืด 100 ชิ้น",pts:80,color:"none"},{label:"อัญเชิญรูน 1 ครั้ง",pts:60,color:"yellow"},{label:"โบราณคดีโบราณวัตถุ 1 ครั้ง",pts:80,color:"none"},{label:"ส่งคริสตัลพลัง 10 เม็ด ให้กับปริญญ์",pts:10,color:"none"},{label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},{label:"เติมเงิน 1 บาท",pts:50,color:"none"}]},
-    {id:"sun",name:"อาทิตย์",cls:"hd-sun",items:[{label:"ล็อคอิน",pts:3000,color:"green"},{label:"ทำการต่อรองราคากิลด์ 1 ครั้ง",pts:1000,color:"orange"},{label:"บริจาคกิลด์ 1 ครั้ง",pts:400,color:"none"},{label:"ฟาร์มการปราบกิลด์ 1 ครั้ง",pts:800,color:"none"},{label:"ต่อสู้ในสงครามโจมตีกิลด์ 1 ครั้ง",pts:10000,color:"orange"},{label:"ได้รับดาว 1 ดวง ในโจมตีกิลด์",pts:4000,color:"none"},{label:"ใช้เหรียญกิลด์ 1000 เหรียญ",pts:50,color:"none"},{label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},{label:"เติมเงิน 1 บาท",pts:50,color:"none"}]},
-];
+        function toggleAllDaily(isChecked) {
+            daysData.forEach(day => applyDailyToDay(day.id, isChecked));
+            saveToStorage(); render();
+        }
+        function toggleDayDaily(dayId, isChecked) {
+            applyDailyToDay(dayId, isChecked);
+            saveToStorage(); render();
+        }
+        function applyDailyToDay(dayId, isAdd) {
+            const counts = getCounts();
+            const day = daysData.find(d => d.id === dayId);
+            if (!day) return;
+            day.items.forEach((item, idx) => {
+                const key = day.id + "_" + idx;
+                if (dailyTargetValues[item.label] !== undefined)
+                    counts[key] = isAdd ? dailyTargetValues[item.label] : 0;
+            });
+        }
+        function updateCheckboxStates() {
+            const counts = getCounts();
+            const dayCbs = document.querySelectorAll('.cb-day');
+            let allChecked = true;
+            dayCbs.forEach(cb => {
+                const dayId = cb.value;
+                const day = daysData.find(d => d.id === dayId);
+                let hasDaily = false, matchesDaily = true;
+                day.items.forEach((item, idx) => {
+                    if (dailyTargetValues[item.label] !== undefined) {
+                        hasDaily = true;
+                        if ((counts[day.id + "_" + idx] || 0) !== dailyTargetValues[item.label]) matchesDaily = false;
+                    }
+                });
+                cb.checked = hasDaily && matchesDaily;
+                if (!cb.checked) allChecked = false;
+            });
+            const allCb = document.getElementById('cb-all-daily');
+            if (allCb) allCb.checked = allChecked && dayCbs.length > 0;
+        }
 
-let appState={currentProfile:"Default",profiles:{"Default":{}}};
-function loadFromStorage(){const s=localStorage.getItem("daily_score_app_data");if(s){try{appState=JSON.parse(s);if(!appState.profiles||!Object.keys(appState.profiles).length)appState.profiles={"Default":{}};if(!appState.currentProfile||!appState.profiles[appState.currentProfile])appState.currentProfile=Object.keys(appState.profiles)[0];}catch(e){console.error(e);}}}
-function saveToStorage(){localStorage.setItem("daily_score_app_data",JSON.stringify(appState));}
-function getCounts() { return appState.profiles[appState.currentProfile] || {}; }
-function getGrand() { let g=0; const c=getCounts(); daysData.forEach(d=>d.items.forEach((it,i)=>g+=(c[d.id+'_'+i]||0)*it.pts)); return g; }
-function getDayTotal(day){let t=0;const c=getCounts();day.items.forEach((_,i)=>t+=(c[day.id+'_'+i]||0)*day.items[i].pts);return t;}
-function updateSummary(){const grand=getGrand();document.getElementById('grand-total').textContent=grand.toLocaleString("th-TH");renderMilestonesProgress(grand);}
-function updateItem(key,dayId){saveToStorage();render();}
+        function initProgressMarkers() {
+            const container = document.getElementById("progress-markers");
+            container.innerHTML = "";
+            const totalSegments = rewardMilestones.length;
+            rewardMilestones.forEach((m, index) => {
+                const marker = document.createElement("div");
+                marker.className = "marker";
+                marker.style.left = ((index + 1) / totalSegments * 100) + "%";
+                const tooltip = document.createElement("div");
+                tooltip.className = "tooltip";
+                let rewardsHtml = Object.entries(m.rewards).map(([k,v]) => `${k} <span>x${fmt(v)}</span>`).join("<br>");
+                tooltip.innerHTML = `<span class="tooltip-score">🎯 ${fmt(m.score)} แต้ม</span>${rewardsHtml}`;
+                marker.appendChild(tooltip);
+                container.appendChild(marker);
+            });
+        }
 
-function renderMilestonesProgress(currentScore){
-    const MAX=500000;
-    document.getElementById('progress-fill').style.width=Math.min(100, (currentScore/MAX)*100)+'%';
-    document.getElementById('progress-text').textContent=currentScore.toLocaleString("th-TH")+' / '+MAX.toLocaleString("th-TH");
-}
+        function updateRewards(currentScore) {
+            const MAX_SCORE = 500000;
+            const stops = [0, ...rewardMilestones.map(m => m.score)];
+            let pct = 0;
+            if (currentScore >= MAX_SCORE) pct = 100;
+            else if (currentScore > 0) {
+                for (let i = 0; i < stops.length - 1; i++) {
+                    if (currentScore >= stops[i] && currentScore < stops[i+1]) {
+                        pct = ((i + (currentScore - stops[i]) / (stops[i+1] - stops[i])) / (stops.length - 1)) * 100;
+                        break;
+                    }
+                }
+            }
+            document.getElementById("progress-fill").style.width = pct + "%";
+            document.getElementById("progress-text").textContent = fmt(currentScore) + " / " + fmt(MAX_SCORE);
+            let accumulatedRewards = {}, nextMilestone = null;
+            rewardMilestones.forEach(m => {
+                if (currentScore >= m.score) {
+                    for (const [k, v] of Object.entries(m.rewards))
+                        accumulatedRewards[k] = (accumulatedRewards[k] || 0) + v;
+                } else if (!nextMilestone) nextMilestone = m;
+            });
+            const listEl = document.getElementById("reward-list");
+            if (Object.keys(accumulatedRewards).length === 0)
+                listEl.innerHTML = `<span style="font-size:11.5px; color:var(--text3);">ยังไม่ถึงเป้าหมายแรก (5,000 แต้ม)</span>`;
+            else
+                listEl.innerHTML = Object.entries(accumulatedRewards).map(([k, v]) => `<div class="reward-item">${k} <span>x${fmt(v)}</span></div>`).join("");
+            const nextEl = document.getElementById("next-reward");
+            if (nextMilestone)
+                nextEl.innerHTML = `🎯 เป้าหมายต่อไป <strong>${fmt(nextMilestone.score)} แต้ม</strong> จะได้รับ: ` + Object.entries(nextMilestone.rewards).map(([k,v]) => `${k} x${fmt(v)}`).join(", ");
+            else
+                nextEl.innerHTML = `🎉 สุดยอด! คุณปลดล็อครางวัลครบทุกเป้าหมายแล้ว`;
+        }
 
-function render(){
-    const grid=document.getElementById('days-grid');grid.innerHTML='';const counts=getCounts();
-    daysData.forEach(day=>{
-        const card=document.createElement('div');card.className='day-card';let rows='';
-        day.items.forEach((item,idx)=>{
-            const key=day.id+'_'+idx;if(!counts[key])counts[key]=0;const sub=counts[key]*item.pts;
-            rows+=`<div class="item-row"><div class="dot dot-none"></div><div class="item-main"><span class="item-label">${item.label}</span><span class="item-pts">${item.pts.toLocaleString("th-TH")} แต้ม</span></div><div class="counter"><button class="btn-c" onclick="change('${key}','${day.id}',-1)">−</button><input class="cnt-input" id="cnt_${key}" type="number" value="${counts[key]}" onchange="handleInput('${key}','${day.id}')" oninput="handleInput('${key}','${day.id}')"><button class="btn-c" onclick="change('${key}','${day.id}',1)">+</button></div><span class="item-sub">${sub>0?sub.toLocaleString("th-TH"):'—'}</span></div>`;
-        });
-        card.innerHTML=`<div class="day-header ${day.cls}"><span class="day-name">${day.name}</span><span class="day-total">${getDayTotal(day).toLocaleString("th-TH")} คะแนน</span></div><div class="items-list">${rows}</div>`;
-        grid.appendChild(card);
-    });
-    updateSummary();
-}
+        const daysData = [
+            { id:"tue", name:"อังคาร", cls:"hd-tue", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ผ่านด่านฟาร์มเคออส 1 ครั้ง",pts:600,color:"none"},
+                {label:"ฟาร์มการปราบผู้นำ 1 ครั้ง",pts:800,color:"none"},
+                {label:"อัญเชิญรูน 1 ครั้ง",pts:60,color:"yellow"},
+                {label:"โบราณคดีโบราณวัตถุ 1 ครั้ง",pts:80,color:"none"},
+                {label:"ส่งคริสตัล 10 เม็ด ให้กับปราชญ์",pts:10,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"wed", name:"พุธ", cls:"hd-wed", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ผ่านด่านการทดสอบทีม 1 ครั้ง",pts:800,color:"none"},
+                {label:"บริจาคกิลด์ 1 ครั้ง",pts:400,color:"none"},
+                {label:"ทำการต่อรองราคากิลด์ 1 ครั้ง",pts:1000,color:"orange"},
+                {label:"ฟาร์มการปราบกิลด์ 1 ครั้ง",pts:800,color:"none"},
+                {label:"ใช้เหรียญกิลด์ 1000 เหรียญ",pts:50,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"thu", name:"พฤหัส", cls:"hd-thu", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ใช้กุญแจเวท 1 อัน",pts:100,color:"yellow"},
+                {label:"ใช้การคุ้มครองลอย 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชั้น ",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานจากโนคอส 1 ชั้น",pts:2000,color:"none"},
+                {label:"ใช้แก่นพลังมืด 100ชิ้น",pts:80,color:"none"},
+                {label:"ใช้กุญแจทอง 1 ดอก",pts:500,color:"none"},
+                {label:"ใช้กุญแจเงิน 1 ดอก",pts:50,color:"yellow"},
+                {label:"เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"fri", name:"ศุกร์", cls:"hd-fri", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"อารีน่า 1 ครั้ง",pts:600,color:"none"},
+                {label:"ชนะอารีน่า 1 ครั้ง",pts:200,color:"none"},
+                {label:"สงครามโดม 1 ครั้ง",pts:1000,color:"none"},
+                {label:"ชนะในสงครามโดม 1 ครั้ง",pts:300,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"sat", name:"เสาร์", cls:"hd-sat", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ใช้กุญแจเวท 1 อัน",pts:100,color:"yellow"},
+                {label:"ใช้การคุ้มครองลอย 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชิ้น",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานของโนคอส 1 ชั้น ",pts:2000,color:"none"},
+                {label:"ใช้ความโปรดปรานจากโนคอส 1 ชั้น",pts:2000,color:"none"},
+                {label:"ใช้ยาวิญญาณเวท 1 ขวด",pts:20,color:"none"},
+                {label:"ใช้แก่นพลังมืด 100 ชิ้น",pts:80,color:"none"},
+                {label:"อัญเชิญรูน 1 ครั้ง",pts:60,color:"yellow"},
+                {label:"โบราณคดีโบราณวัตถุ 1 ครั้ง",pts:80,color:"none"},
+                {label:"ส่งคริสตัลพลัง 10 เม็ด ให้กับปริญญ์",pts:10,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+            { id:"sun", name:"อาทิตย์", cls:"hd-sun", items:[
+                {label:"ล็อคอิน",pts:3000,color:"green"},
+                {label:"ทำการต่อรองราคากิลด์ 1 ครั้ง",pts:1000,color:"orange"},
+                {label:"บริจาคกิลด์ 1 ครั้ง",pts:400,color:"none"},
+                {label:"ฟาร์มการปราบกิลด์ 1 ครั้ง",pts:800,color:"none"},
+                {label:"ต่อสู้ในสงครามโจมตีกิลด์ 1 ครั้ง",pts:10000,color:"orange"},
+                {label:"ได้รับดาว 1 ดวง ในโจมตีกิลด์",pts:4000,color:"none"},
+                {label:"ใช้เหรียญกิลด์ 1000 เหรียญ",pts:50,color:"none"},
+                {label:"ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ",pts:10,color:"cyan"},
+                {label:"เติมเงิน 1 บาท",pts:50,color:"none"},
+            ]},
+        ];
 
-function change(key,dayId,delta){const counts=getCounts();counts[key]=Math.max(0,(counts[key]||0)+delta);updateItem(key,dayId);}
-function handleInput(key,dayId){const v=parseInt(document.getElementById('cnt_'+key).value)||0;const counts=getCounts();counts[key]=Math.max(0,v);document.getElementById('cnt_'+key).value=counts[key];updateItem(key,dayId);}
-function resetAll(){if(!confirm('รีเซ็ตคะแนนทั้งหมด?')) return; const counts=getCounts(); Object.keys(counts).forEach(k=>counts[k]=0); saveToStorage(); render();}
-function downloadHTML(){const blob=new Blob([document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='daily_score_calculator.html';a.click();}
-function updateProfileDropdown(){document.getElementById('profile-select').innerHTML="<option value='Default'>Default</option>";}
+        let appState = { currentProfile: "Default", profiles: { "Default": {} } };
 
-loadFromStorage();
-updateProfileDropdown();
-render();
-onOpenCvReady();
-</script>
+        function dotClass(c) {
+            if (c==="yellow") return "dot dot-yellow";
+            if (c==="orange") return "dot dot-orange";
+            if (c==="cyan")   return "dot dot-cyan";
+            if (c==="green")  return "dot dot-green";
+            return "dot dot-none";
+        }
+        function fmt(n) { return n.toLocaleString("th-TH") }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem("daily_score_app_data");
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                    if (!appState.profiles || !Object.keys(appState.profiles).length) appState.profiles = {"Default":{}};
+                    if (!appState.currentProfile || !appState.profiles[appState.currentProfile])
+                        appState.currentProfile = Object.keys(appState.profiles)[0];
+                } catch(e) { console.error(e); }
+            }
+        }
+        function saveToStorage() { localStorage.setItem("daily_score_app_data", JSON.stringify(appState)); }
+        function getCounts() { return appState.profiles[appState.currentProfile] || {}; }
+        function getGrand() {
+            let g = 0;
+            const c = getCounts();
+            daysData.forEach(d => d.items.forEach((it,i) => g += (c[d.id+"_"+i]||0)*it.pts));
+            return g;
+        }
+        function getDayTotal(day) {
+            let t = 0;
+            const c = getCounts();
+            day.items.forEach((_,i) => t += (c[day.id+"_"+i]||0)*day.items[i].pts);
+            return t;
+        }
+        function updateSummary() {
+            const grand = getGrand();
+            document.getElementById("grand-total").textContent = fmt(grand);
+            const active = daysData.filter(d=>getDayTotal(d)>0).map(d=>d.name).join(", ");
+            document.getElementById("active-days").textContent = active ? "วันที่บันทึก: "+active : "ยังไม่ได้กรอกข้อมูล";
+            updateRewards(grand);
+        }
+        function updateItem(key, dayId) {
+            const day = daysData.find(d=>d.id===dayId);
+            const idx = parseInt(key.split("_")[1]);
+            const counts = getCounts();
+            const sub = (counts[key]||0) * day.items[idx].pts;
+            const subEl = document.getElementById("sub_"+key);
+            if (subEl) { subEl.textContent = sub>0?fmt(sub):"—"; subEl.className="item-sub"+(sub>0?" sub-active":""); }
+            const cntEl = document.getElementById("cnt_"+key);
+            if (cntEl) cntEl.value = counts[key]||0;
+            document.getElementById("dtotal_"+dayId).textContent = fmt(getDayTotal(day))+" คะแนน";
+            updateSummary(); saveToStorage(); updateCheckboxStates();
+        }
+        function change(key, dayId, delta) {
+            const counts = getCounts();
+            counts[key] = Math.max(0, (counts[key]||0)+delta);
+            updateItem(key, dayId);
+        }
+        function handleInput(key, dayId) {
+            const v = parseInt(document.getElementById("cnt_"+key).value)||0;
+            const counts = getCounts();
+            counts[key] = Math.max(0,v);
+            document.getElementById("cnt_"+key).value = counts[key];
+            updateItem(key, dayId);
+        }
+        function updateProfileDropdown() {
+            const select = document.getElementById("profile-select");
+            select.innerHTML = "";
+            Object.keys(appState.profiles).forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p; opt.textContent = p;
+                if (p===appState.currentProfile) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+        function createNewProfile() {
+            const input = document.getElementById("new-profile-name");
+            const name = input.value.trim();
+            if (!name) return alert("กรุณากรอกชื่อโปรไฟล์");
+            if (appState.profiles[name]) return alert("มีโปรไฟล์ชื่อนี้อยู่แล้ว");
+            appState.profiles[name] = {}; appState.currentProfile = name; input.value = "";
+            saveToStorage(); updateProfileDropdown(); render();
+        }
+        function switchProfile(name) {
+            if (!appState.profiles[name]) return;
+            appState.currentProfile = name; saveToStorage(); render();
+        }
+        function deleteProfile() {
+            const name = appState.currentProfile;
+            if (Object.keys(appState.profiles).length<=1) return alert("ต้องมีอย่างน้อย 1 โปรไฟล์");
+            if (!confirm(`คุณต้องการลบโปรไฟล์ "${name}" ใช่หรือไม่?`)) return;
+            delete appState.profiles[name];
+            appState.currentProfile = Object.keys(appState.profiles)[0];
+            saveToStorage(); updateProfileDropdown(); render();
+        }
+        function exportProfilesJSON() {
+            const blob = new Blob([JSON.stringify(appState,null,2)],{type:"application/json;charset=utf-8"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob); a.download = "score_profiles_backup.json"; a.click();
+            URL.revokeObjectURL(a.href);
+        }
+        function importProfilesJSON(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.profiles && importedData.currentProfile) {
+                        if (confirm("การนำเข้าข้อมูลจะเขียนทับโปรไฟล์ปัจจุบัน คุณต้องการดำเนินการต่อใช่หรือไม่?")) {
+                            appState = importedData; saveToStorage(); loadFromStorage();
+                            updateProfileDropdown(); render();
+                            alert("นำเข้าข้อมูลโปรไฟล์สำเร็จแล้ว!");
+                        }
+                    } else alert("โครงสร้างไฟล์ข้อมูลไม่ถูกต้อง");
+                } catch(err) { alert("เกิดข้อผิดพลาดในการอ่านไฟล์"); }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+        function render() {
+            const grid = document.getElementById("days-grid");
+            grid.innerHTML = "";
+            const counts = getCounts();
+            daysData.forEach(day => {
+                const card = document.createElement("div");
+                card.className = "day-card";
+                let rows = "";
+                day.items.forEach((item, idx) => {
+                    const key = day.id+"_"+idx;
+                    if (!counts[key]) counts[key] = 0;
+                    const sub = counts[key]*item.pts;
+                    rows += `<div class="item-row">
+                        <div class="${dotClass(item.color)}"></div>
+                        <div class="item-main">
+                          <span class="item-label">${item.label}</span>
+                          <span class="item-pts">${fmt(item.pts)} แต้ม</span>
+                        </div>
+                        <div class="counter">
+                          <button class="btn-c" onclick="change('${key}','${day.id}',-1)">−</button>
+                          <input class="cnt-input" id="cnt_${key}" type="number" pattern="[0-9]*" inputmode="numeric" min="0" value="${counts[key]}"
+                            onchange="handleInput('${key}','${day.id}')" oninput="handleInput('${key}','${day.id}')">
+                          <button class="btn-c" onclick="change('${key}','${day.id}',1)">+</button>
+                        </div>
+                        <span class="item-sub${sub>0?' sub-active':''}" id="sub_${key}">${sub>0?fmt(sub):"—"}</span>
+                      </div>`;
+                });
+                const dt = getDayTotal(day);
+                card.innerHTML = `<div class="day-header ${day.cls}">
+                    <span class="day-name">${day.name}</span>
+                    <span class="day-total" id="dtotal_${day.id}">${fmt(dt)} คะแนน</span>
+                  </div>
+                  <div class="items-list">${rows}</div>`;
+                grid.appendChild(card);
+            });
+            updateCheckboxStates(); updateSummary();
+        }
+        function resetAll() {
+            if (!confirm("รีเซ็ตคะแนนของโปรไฟล์นี้ทั้งหมด?")) return;
+            const counts = getCounts();
+            Object.keys(counts).forEach(k => counts[k] = 0);
+            saveToStorage(); render();
+        }
+        function downloadHTML() {
+            const blob = new Blob([document.documentElement.outerHTML],{type:"text/html;charset=utf-8"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob); a.download = "daily_score_calculator.html"; a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // เริ่มต้น
+        loadFromStorage();
+        initProgressMarkers();
+        updateProfileDropdown();
+        render();
+    </script>
 </body>
 </html>
