@@ -95,7 +95,6 @@
         .scan-status-badge.loading{background:#fff8e1;color:#f9a825;border-color:#ffe082;}
         .scan-status-badge.error{background:#ffebee;color:#b71c1c;border-color:#ef9a9a;}
 
-        /* API Key row */
         .api-key-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
         .api-key-input { flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2); font-family: inherit; font-size: 12px; color: var(--text); background: var(--bg); }
         .api-key-input:focus { outline: none; border-color: #00838f; background: #fff; }
@@ -109,14 +108,13 @@
         .upload-zone-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
         .scan-preview-wrap { margin-top: 12px; display: none; }
         .scan-preview-wrap.show { display: block; }
-        .scan-preview-img { max-width: 100%; max-height: 300px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: block; margin-bottom: 10px; }
+        .scan-preview-img { max-width: 100%; max-height: 300px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: block; margin: 0 auto 10px; }
         .btn-scan { background: #00838f; color: #fff; border-color: #00838f; font-size: 13px; padding: 10px 20px; width: 100%; justify-content: center; }
         .btn-scan:disabled{background:var(--border2);border-color:var(--border2);color:#fff;cursor:not-allowed;}
         .scan-progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 10px; overflow: hidden; display: none; }
         .scan-progress-bar.show{display:block;}
         .scan-progress-fill { height: 100%; background: #00838f; border-radius: 3px; width: 0%; transition: width 0.3s; }
 
-        /* Detection cards */
         .detection-results { margin-top: 16px; display: none; }
         .detection-results.show{display:block;}
         .detection-results-title { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -134,7 +132,7 @@
         .detection-card-label { font-size: 10px; color: var(--text3); margin-left: 4px; }
         .detection-card-confidence { font-size: 10px; color: #00838f; margin-top: 3px; }
         .detection-card.not-found{opacity:0.4;}
-        .scan-log { margin-top: 10px; font-size: 11px; color: var(--text3); background: var(--bg); border-radius: var(--radius-sm); padding: 8px 12px; line-height: 1.8; display: none; white-space: pre-wrap; }
+        .scan-log { margin-top: 10px; font-size: 11px; color: var(--text2); background: var(--bg); border-radius: var(--radius-sm); padding: 8px 12px; line-height: 1.8; display: none; white-space: pre-wrap; }
         .scan-log.show{display:block;}
         .log-found{color:#2e7d32;font-weight:600;}
         .log-notfound{color:#b71c1c;}
@@ -145,7 +143,6 @@
 </head>
 <body>
 <div class="page">
-
     <div class="top-bar">
         <div class="page-title">ตารางคำนวณคะแนนรายวัน</div>
         <div class="top-actions">
@@ -209,22 +206,19 @@
         </div>
     </div>
 
-    <!-- ── SCAN SECTION ── -->
     <div class="scan-section">
         <div class="scan-title">
-            🔍 สแกนภาพอัตโนมัติ
+            🔍 สแกนภาพอัตโนมัติ (คลังไอเทม)
             <span class="scan-status-badge ready" id="cv-status">✓ พร้อมใช้งาน</span>
         </div>
 
-        <!-- วิธีสแกน -->
         <div class="scan-method-toggle">
-            <div class="method-btn active" id="method-claude" onclick="setMethod('claude')">✨ Gemini AI <small style="display:block;font-size:9px;opacity:0.8;">(แม่นที่สุด · ฟรี)</small></div>
-            <div class="method-btn" id="method-cv" onclick="setMethod('cv')">🔬 Template Matching <small style="display:block;font-size:9px;opacity:0.8;">(ไม่ต้อง API Key)</small></div>
+            <div class="method-btn active" id="method-claude" onclick="setMethod('claude')">✨ Gemini AI <small style="display:block;font-size:9px;opacity:0.8;">(แม่นยำสูง · ล้างพิกเซลตัวอักษร)</small></div>
+            <div class="method-btn" id="method-cv" onclick="setMethod('cv')">🔬 Template Matching <small style="display:block;font-size:9px;opacity:0.8;">(ไม่ต้องใช้ API Key)</small></div>
         </div>
 
-        <!-- Gemini mode: API key -->
         <div id="claude-api-section">
-            <div class="api-key-label">🔑 Gemini API Key — ได้จาก <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00838f;">aistudio.google.com/apikey</a> (ฟรี ไม่ต้องบัตร)</div>
+            <div class="api-key-label">🔑 Gemini API Key — ออกคีย์ฟรีที่ <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00838f;">aistudio.google.com/apikey</a></div>
             <div class="api-key-row">
                 <input type="password" class="api-key-input" id="api-key-input" placeholder="AIzaSy...">
                 <button class="btn" onclick="saveApiKey()" style="white-space:nowrap;">บันทึก</button>
@@ -233,10 +227,8 @@
             <div id="api-key-status" style="font-size:11px;color:var(--text3);margin-bottom:8px;"></div>
         </div>
 
-        <!-- CV mode: OpenCV loading -->
         <div id="cv-api-section" style="display:none;">
-            <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;" id="cv-load-status">กำลังโหลด OpenCV.js...</div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;" id="cv-load-status">ระบบเปิดรับการจับคู่สเกลแบบ Multi-Scale...</div>
         </div>
 
         <div class="upload-zone" id="upload-zone">
@@ -257,7 +249,7 @@
         </div>
 
         <div class="detection-results" id="detection-results">
-            <div class="detection-results-title">📦 ผลการตรวจจับ — แก้ไขจำนวนได้</div>
+            <div class="detection-results-title">📦 ผลการตรวจจับ — บันทึกลงตารางอัตโนมัติ</div>
             <div class="detection-grid" id="detection-grid"></div>
         </div>
         <div class="scan-log" id="scan-log"></div>
@@ -294,76 +286,58 @@
 
 <script>
 // =========================================================
-// Config
+// แก้ไขคีย์และโครงสร้างชื่อไฟล์ตามโครงสร้าง Repository จริงบน GitHub
 // =========================================================
 const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
 
-// ชื่อไฟล์จริงใน repo (มี  ต่อท้าย)
 const templateDefs = [
-    { file: "BlessingRoy.JPG",   name: "คุ้มครองลอย" },
-    { file: "CrystalRed.JPG",    name: "ส่งคริสตัล 10 เม็ด" },
-    { file: "GoldenKey.JPG",      name: "กุญแจทอง" },
-    { file: "GuildBlueCoin.JPG",  name: "เหรียญกิลด์คริสตัลฟ้า" },
-    { file: "GuildCoin.JPG",      name: "เหรียญกิลด์" },
-    { file: "HammerRelic.JPG",    name: "โบราณคดีโบราณวัตถุ" },
-    { file: "PotionGh.JPG",       name: "ยาวิญญาณเวท" },
-    { file: "Rune.JPG",           name: "อัญเชิญรูน" },
+    { file: "BlessingRoy (1).JPG",    name: "คุ้มครองลอย" },
+    { file: "CrystalRed (1).JPG",     name: "ส่งคริสตัล 10 เม็ด" },
+    { file: "GoldenKey (1).JPG",       name: "กุญแจทอง" },
+    { file: "GuildBlueCoin (1).JPG",   name: "เหรียญกิลด์คริสตัลฟ้า" },
+    { file: "GuildCoin.jpg",           name: "เหรียญกิลด์" },
+    { file: "HammerRelic (1).JPG",     name: "โบราณคดีโบราณวัตถุ" },
+    { file: "PotionGh (1).JPG",        name: "ยาวิญญาณเวท" },
+    { file: "Rune (1).JPG",            name: "อัญเชิญรูน" },
 ];
 
-// Prompt — บังคับ JSON เท่านั้น ห้าม markdown
-const CLAUDE_PROMPT = `You are analyzing a game inventory screenshot.
-Find and count these items (read the number shown below/on each icon carefully):
-
-1. คุ้มครองลอย
-2. ส่งคริสตัล 10 เม็ด
-3. กุญแจทอง
-4. เหรียญกิลด์คริสตัลฟ้า
-5. เหรียญกิลด์
-6. โบราณคดีโบราณวัตถุ
-7. ยาวิญญาณเวท
-8. อัญเชิญรูน
-
-IMPORTANT: Reply with ONLY a raw JSON object. No markdown, no backticks, no explanation.
-Example: {"คุ้มครองลอย":12,"ส่งคริสตัล 10 เม็ด":552,"กุญแจทอง":9,"เหรียญกิลด์คริสตัลฟ้า":400,"เหรียญกิลด์":7750,"โบราณคดีโบราณวัตถุ":142,"ยาวิญญาณเวท":140,"อัญเชิญรูน":1550}
-Output ONLY the JSON, nothing else:`;
-
-// Map ชื่อ AI → templateDef file
 const nameToFile = {
-    "คุ้มครองลอย":           "BlessingRoy.JPG",
-    "ส่งคริสตัล 10 เม็ด":    "CrystalRed.JPG",
-    "กุญแจทอง":              "GoldenKey.JPG",
-    "เหรียญกิลด์คริสตัลฟ้า": "GuildBlueCoin.JPG",
-    "เหรียญกิลด์":           "GuildCoin.JPG",
-    "โบราณคดีโบราณวัตถุ":    "HammerRelic.JPG",
-    "ยาวิญญาณเวท":           "PotionGh.JPG",
-    "อัญเชิญรูน":            "Rune.JPG",
+    "คุ้มครองลอย":           "BlessingRoy (1).JPG",
+    "ส่งคริสตัล 10 เม็ด":    "CrystalRed (1).JPG",
+    "กุญแจทอง":              "GoldenKey (1).JPG",
+    "เหรียญกิลด์คริสตัลฟ้า": "GuildBlueCoin (1).JPG",
+    "เหรียญกิลด์":           "GuildCoin.jpg",
+    "โบราณคดีโบราณวัตถุ":    "HammerRelic (1).JPG",
+    "ยาวิญญาณเวท":           "PotionGh (1).JPG",
+    "อัญเชิญรูน":            "Rune (1).JPG",
 };
 
-// =========================================================
-// State
-// =========================================================
+const CLAUDE_PROMPT = `Analyze this game inventory screenshot. Extract numbers or scale counts (e.g. 3.51K -> 3510, 7.75K -> 7750) for these items:
+- คุ้มครองลอย
+- ส่งคริสตัล 10 เม็ด
+- กุญแจทอง
+- เหรียญกิลด์คริสตัลฟ้า
+- เหรียญกิลด์
+- โบราณคดีโบราณวัตถุ
+- ยาวิญญาณเวท
+- อัญเชิญรูน
+Return a strict raw JSON only, no markdown, no wrapping:`;
+
 let loadedTemplates = {};
 let cvReady = false;
 let scanImageElement = null;
 let scanImageBase64 = null;
 let detectionCounts = {};
-let currentMethod = 'claude'; // 'claude' | 'cv'
+let currentMethod = 'claude';
 
-// =========================================================
-// Method toggle
-// =========================================================
 function setMethod(m) {
     currentMethod = m;
     document.getElementById('method-claude').className = 'method-btn' + (m==='claude'?' active':'');
     document.getElementById('method-cv').className    = 'method-btn' + (m==='cv'?' active':'');
     document.getElementById('claude-api-section').style.display = m==='claude'?'block':'none';
     document.getElementById('cv-api-section').style.display     = m==='cv'?'block':'none';
-    if (m==='cv' && !cvReady) preloadTemplates();
 }
 
-// =========================================================
-// API Key management
-// =========================================================
 function loadApiKey() {
     const k = localStorage.getItem('gemini_api_key') || '';
     document.getElementById('api-key-input').value = k;
@@ -373,11 +347,11 @@ function saveApiKey() {
     const k = document.getElementById('api-key-input').value.trim();
     localStorage.setItem('gemini_api_key', k);
     updateApiKeyStatus(k);
-    alert(k ? '✓ บันทึก Gemini API Key แล้ว' : 'ลบ API Key แล้ว');
+    alert(k ? '✓ บันทึก Gemini API Key แล้ว' : 'ลบ API Key เรียบร้อย');
 }
 function updateApiKeyStatus(k) {
     const el = document.getElementById('api-key-status');
-    el.textContent = k ? `✓ API Key: ${k.slice(0,8)}...${k.slice(-4)} (บันทึกแล้ว)` : '⚠ ยังไม่มี API Key — กรอกแล้วกด "บันทึก"';
+    el.textContent = k ? `✓ API Key พร้อมใช้งาน` : '⚠ กรุณากรอกคีย์หลังบ้านเพื่อเริ่มต้นใช้งานผ่านระบบคลาวด์';
     el.style.color = k ? '#2e7d32' : '#f9a825';
 }
 function toggleShowKey() {
@@ -386,12 +360,8 @@ function toggleShowKey() {
 }
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
-// =========================================================
-// OpenCV Template load
-// =========================================================
 function onOpenCvReady() {
     cvReady = true;
-    document.getElementById('cv-load-status').textContent = '✓ OpenCV พร้อม';
     preloadTemplates();
 }
 async function preloadTemplates() {
@@ -404,15 +374,8 @@ async function preloadTemplates() {
         img.src = GITHUB_RAW_BASE + t.file;
     }));
     await Promise.all(proms);
-    if (currentMethod === 'cv') {
-        document.getElementById('cv-load-status').textContent =
-            `✓ โหลด templates ${loaded}/${templateDefs.length} ไฟล์`;
-    }
 }
 
-// =========================================================
-// Image select
-// =========================================================
 function onScanImageSelected(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -433,30 +396,16 @@ function onScanImageSelected(event) {
     reader.readAsDataURL(file);
 }
 
-// Drag & drop
-document.getElementById('upload-zone').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.style.borderColor='#00838f'; });
-document.getElementById('upload-zone').addEventListener('dragleave', e => { e.currentTarget.style.borderColor=''; });
-document.getElementById('upload-zone').addEventListener('drop', e => {
-    e.preventDefault(); e.currentTarget.style.borderColor='';
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('image/')) onScanImageSelected({target:{files:[f]}});
-});
-
-// =========================================================
-// MAIN SCAN dispatcher
-// =========================================================
 async function doScan() {
-    if (!scanImageElement) return alert('กรุณาอัปโหลดภาพก่อน');
+    if (!scanImageElement) return alert('กรุณาอัปโหลดภาพคลังไอเทมก่อนทำการสแกน');
     if (currentMethod === 'claude') await doScanGemini();
     else await doScanCV();
 }
 
-// =========================================================
-// METHOD 1: Gemini Vision API — แม่นที่สุด ฟรี ไม่ต้องบัตร
-// =========================================================
+// ── แก้ไขเวอร์ชัน Endpoint เป็นรุ่นที่มีความเสถียรสูงสุดสำหรับสแกนภาพ ──
 async function doScanGemini() {
     const apiKey = getApiKey();
-    if (!apiKey) return alert('กรุณากรอก Gemini API Key ก่อน\nได้จาก: https://aistudio.google.com/apikey');
+    if (!apiKey) return alert('กรุณากรอก Gemini API Key ก่อนใช้งาน');
 
     const btn = document.getElementById('btn-do-scan');
     const pBar = document.getElementById('scan-progress-bar');
@@ -464,20 +413,17 @@ async function doScanGemini() {
     const log  = document.getElementById('scan-log');
 
     btn.disabled = true;
-    btn.textContent = '🤖 Gemini กำลังวิเคราะห์ภาพ...';
+    btn.textContent = '🤖 กำลังอ่านข้อมูลหน้าจอคลังไอเทม...';
     pBar.classList.add('show');
-    pFill.style.width = '20%';
+    pFill.style.width = '30%';
     log.classList.add('show');
-    log.innerHTML = '🤖 กำลังส่งภาพให้ Gemini วิเคราะห์...';
+    log.innerHTML = '🤖 ระบบส่งข้อมูลภาพเข้าสู่คลาวด์เอ็นจิ้น...';
 
-    // ตรวจ mime type จาก base64 header
     const mimeType = scanImageBase64.startsWith('/9j') ? 'image/jpeg' : 'image/png';
 
     try {
-        pFill.style.width = '40%';
-
         const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -489,50 +435,40 @@ async function doScanGemini() {
                         ]
                     }],
                     generationConfig: {
-                        temperature: 0,
-                        maxOutputTokens: 512,
+                        temperature: 0.1,
                         responseMimeType: 'application/json',
                     }
                 })
             }
         );
 
-        pFill.style.width = '80%';
+        pFill.style.width = '75%';
 
         if (!resp.ok) {
             const err = await resp.json();
-            throw new Error(err.error?.message || `HTTP ${resp.status}`);
+            throw new Error(err.error?.message || `HTTP Connection ${resp.status}`);
         }
 
         const data = await resp.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        // Parse JSON — รองรับทั้ง raw JSON และ markdown ```json ... ```
-        let result;
-        try {
-            // ลบ markdown backticks ถ้ามี
-            const cleaned = text
-                .replace(/```json\s*/gi, '')
-                .replace(/```\s*/g, '')
-                .trim();
-            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error('ไม่พบ JSON ใน response:\n' + text.slice(0, 400));
-            result = JSON.parse(jsonMatch[0]);
-        } catch(parseErr) {
-            throw new Error('แปลง JSON ไม่ได้: ' + parseErr.message + '\nResponse: ' + text.slice(0, 300));
-        }
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        
+        let result = JSON.parse(text);
 
         detectionCounts = {};
-        const logLines = ['<span style="color:#00838f;font-weight:600;">✅ Gemini วิเคราะห์เสร็จแล้ว:</span>'];
+        const logLines = ['<span style="color:#00838f;font-weight:600;">✅ การประมวลผลผ่าน AI สำเร็จ:</span>'];
 
         for (const [name, count] of Object.entries(result)) {
             const file = nameToFile[name];
             if (!file) continue;
-            detectionCounts[file] = parseInt(count) || 0;
-            if (detectionCounts[file] > 0)
-                logLines.push(`<span class="log-found">✓ ${name}: ${detectionCounts[file].toLocaleString()}</span>`);
+            let finalVal = parseInt(count) || 0;
+            detectionCounts[file] = finalVal;
+            
+            syncDetectedCountToApp(name, finalVal);
+
+            if (finalVal > 0)
+                logLines.push(`<span class="log-found">✓ ${name}: บันทึกค่า ${finalVal.toLocaleString()} ชิ้น</span>`);
             else
-                logLines.push(`<span class="log-notfound">✗ ${name}: ไม่พบ</span>`);
+                logLines.push(`<span class="log-notfound">✗ ${name}: ไม่พบในรูป</span>`);
         }
 
         pFill.style.width = '100%';
@@ -541,27 +477,21 @@ async function doScanGemini() {
         document.getElementById('detection-results').classList.add('show');
 
     } catch(e) {
-        log.innerHTML = `<span class="log-notfound">❌ Error: ${e.message}</span>`;
-        console.error(e);
+        log.innerHTML = `<span class="log-notfound">❌ เกิดข้อผิดพลาดทางเทคนิค: ${e.message}</span>`;
     }
 
     btn.disabled = false;
     btn.textContent = '🔍 สแกนอีกครั้ง';
+    render();
 }
 
-// =========================================================
-// METHOD 2: OpenCV Template Matching
-// =========================================================
 async function doScanCV() {
-    if (!cvReady) return alert('OpenCV ยังโหลดไม่เสร็จ รอสักครู่');
-    if (!scanImageElement) return;
-
+    if (!cvReady) return alert('ระบบสแกนแบบดั้งเดิมยังโหลดไลบรารีไม่สมบูรณ์');
     const btn = document.getElementById('btn-do-scan');
     const pBar = document.getElementById('scan-progress-bar');
     const pFill = document.getElementById('scan-progress-fill');
     btn.disabled = true;
     pBar.classList.add('show');
-    pFill.style.width = '0%';
 
     detectionCounts = {};
     const srcCanvas = document.createElement('canvas');
@@ -572,51 +502,61 @@ async function doScanCV() {
     let logLines = [];
     const total = templateDefs.length;
 
-    for (let ti = 0; ti < total; ti++) {
-        const tDef = templateDefs[ti];
-        pFill.style.width = Math.round((ti/total)*100) + '%';
-        btn.textContent = `⏳ ${ti+1}/${total}: ${tDef.name}`;
-        await new Promise(r => setTimeout(r, 10));
+    try {
+        const src = cv.imread(srcCanvas);
+        for (let ti = 0; ti < total; ti++) {
+            const tDef = templateDefs[ti];
+            pFill.style.width = Math.round((ti/total)*100) + '%';
+            btn.textContent = `⏳ วิเคราะห์ภาพไอเทม (${ti+1}/${total})`;
+            await new Promise(r => setTimeout(r, 15));
 
-        const tmplImg = loadedTemplates[tDef.file];
-        if (!tmplImg) {
-            detectionCounts[tDef.file] = 0;
-            logLines.push(`<span class="log-notfound">✗ ${tDef.name} — โหลด template ไม่ได้</span>`);
-            continue;
-        }
+            const tmplImg = loadedTemplates[tDef.file];
+            if (!tmplImg || tmplImg.width === 60) {
+                logLines.push(`<span>✗ ข้ามการตรวจจับ ${tDef.name} เนื่องจากการเชื่อมโยงพิกเซลล้มเหลว</span>`);
+                continue;
+            }
 
-        const tc = document.createElement('canvas');
-        tc.width = tmplImg.naturalWidth; tc.height = tmplImg.naturalHeight;
-        tc.getContext('2d').drawImage(tmplImg, 0, 0);
+            const tc = document.createElement('canvas');
+            tc.width = tmplImg.naturalWidth; tc.height = tmplImg.naturalHeight;
+            tc.getContext('2d').drawImage(tmplImg, 0, 0);
 
-        let bestVal = -Infinity, bestMatches = [];
-        const THRESHOLD = 0.70;
-        const scales = [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0];
-
-        try {
-            const src  = cv.imread(srcCanvas);
+            let bestVal = -Infinity, bestMatches = [];
             const tmpl = cv.imread(tc);
+            
+            // ขยายขอบเขตและซอยช่วงสเกลให้ถี่ละเอียดขึ้นเพื่อจับพิกเซลบนเว็บมือถือ
+            const scales = [0.2, 0.35, 0.5, 0.65, 0.8, 1.0, 1.2, 1.4];
             for (const scale of scales) {
                 const tw = Math.round(tmplImg.naturalWidth * scale);
                 const th = Math.round(tmplImg.naturalHeight * scale);
-                if (tw < 8 || th < 8 || tw > srcCanvas.width || th > srcCanvas.height) continue;
+                if (tw < 6 || th < 6 || tw > srcCanvas.width || th > srcCanvas.height) continue;
+                
                 const tr = new cv.Mat();
                 cv.resize(tmpl, tr, new cv.Size(tw, th));
                 const res = new cv.Mat();
                 cv.matchTemplate(src, tr, res, cv.TM_CCOEFF_NORMED);
-                const { maxVal } = cv.minMaxLoc(res);
-                const matches = getMatchPositions(res, THRESHOLD, tw, th);
-                if (maxVal > bestVal) { bestVal = maxVal; bestMatches = matches.map(m => ({...m, w:tw, h:th})); }
+                const minMax = cv.minMaxLoc(res);
+                const matches = getMatchPositions(res, 0.56, tw, th);
+                
+                if (minMax.maxVal > bestVal) { 
+                    bestVal = minMax.maxVal; 
+                    bestMatches = matches;
+                }
                 tr.delete(); res.delete();
             }
-            src.delete(); tmpl.delete();
-        } catch(e) { console.error(e); }
+            tmpl.delete();
 
-        detectionCounts[tDef.file] = bestMatches.length;
-        if (bestMatches.length > 0)
-            logLines.push(`<span class="log-found">✓ ${tDef.name} — พบ ${bestMatches.length} จุด (conf: ${(bestVal*100).toFixed(0)}%)</span>`);
-        else
-            logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่พบ</span>`);
+            let finalCount = bestMatches.length;
+            detectionCounts[tDef.file] = finalCount;
+            syncDetectedCountToApp(tDef.name, finalCount);
+
+            if (finalCount > 0)
+                logLines.push(`<span class="log-found">✓ พบบล็อกวัตถุของ ${tDef.name} จำนวน ${finalCount} ช่อง</span>`);
+            else
+                logLines.push(`<span class="log-notfound">✗ ค้นหาพื้นที่ไอคอน ${tDef.name} ไม่พบบนหน้าจอ</span>`);
+        }
+        src.delete();
+    } catch(e) {
+        console.error(e);
     }
 
     pFill.style.width = '100%';
@@ -626,12 +566,34 @@ async function doScanCV() {
     document.getElementById('detection-results').classList.add('show');
     btn.disabled = false;
     btn.textContent = '🔍 สแกนอีกครั้ง';
+    render();
+}
+
+function syncDetectedCountToApp(aiName, value) {
+    const counts = getCounts();
+    const targetLabels = Object.keys(nameToFile).find(k => k === aiName);
+    if (!targetLabels) return;
+
+    daysData.forEach(day => {
+        day.items.forEach((item, idx) => {
+            // แมพจับคู่คำสั่งและป้อนค่าจำนวนจริงเข้าสู่ระบบปฏิทินกรอกตารางอัตโนมัติ
+            if (aiName === "คุ้มครองลอย" && item.label === "ใช้การคุ้มครองลอย 1 ชิ้น") counts[day.id+'_'+idx] = value;
+            if (aiName === "ส่งคริสตัล 10 เม็ด" && (item.label === "ส่งคริสตัล 10 เม็ด ให้กับปราชญ์" || item.label === "ส่งคริสตัลพลัง 10 เม็ด ให้กับปริญญ์")) counts[day.id+'_'+idx] = value;
+            if (aiName === "กุญแจทอง" && item.label === "ใช้กุญแจทอง 1 ดอก") counts[day.id+'_'+idx] = value;
+            if (aiName === "เหรียญกิลด์คริสตัลฟ้า" && (item.label === "ใช้เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ" || item.label === "เหรียญกิลด์คริสตัลฟ้า 1 เหรียญ")) counts[day.id+'_'+idx] = value;
+            if (aiName === "เหรียญกิลด์" && item.label === "ใช้เหรียญกิลด์ 1000 เหรียญ") counts[day.id+'_'+idx] = Math.floor(value / 1000);
+            if (aiName === "โบราณคดีโบราณวัตถุ" && item.label === "โบราณคดีโบราณวัตถุ 1 ครั้ง") counts[day.id+'_'+idx] = value;
+            if (aiName === "ยาวิญญาณเวท" && item.label === "ใช้ยาวิญญาณเวท 1 ขวด") counts[day.id+'_'+idx] = value;
+            if (aiName === "อัญเชิญรูน" && item.label === "อัญเชิญรูน 1 ครั้ง") counts[day.id+'_'+idx] = value;
+        });
+    });
+    saveToStorage();
 }
 
 function getMatchPositions(resultMat, threshold, tmplW, tmplH) {
     const data = resultMat.data32F, cols = resultMat.cols, rows = resultMat.rows;
     const visited = new Uint8Array(cols * rows);
-    const minDist = Math.max(tmplW, tmplH) * 0.5;
+    const minDist = Math.max(tmplW, tmplH) * 0.7;
     const candidates = [];
     for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) { const v=data[r*cols+c]; if(v>=threshold) candidates.push({r,c,v}); }
     candidates.sort((a,b)=>b.v-a.v);
@@ -646,33 +608,30 @@ function getMatchPositions(resultMat, threshold, tmplW, tmplH) {
     return results;
 }
 
-// =========================================================
-// Detection Cards
-// =========================================================
 function renderDetectionCards() {
     const grid = document.getElementById('detection-grid');
     grid.innerHTML = '';
     templateDefs.forEach(tDef => {
         const count = detectionCounts[tDef.file] || 0;
-        const imgSrc = loadedTemplates[tDef.file] ? loadedTemplates[tDef.file].src : (GITHUB_RAW_BASE + tDef.file);
+        const imgSrc = GITHUB_RAW_BASE + tDef.file;
         const card = document.createElement('div');
         card.className = 'detection-card' + (count===0?' not-found':'');
-        card.id = 'dcard_' + tDef.file.replace(/[\.\-]/g,'_');
+        card.id = 'dcard_' + tDef.file.replace(/[\.\-\s\(\)]/g,'_');
         card.innerHTML = `
             <img class="detection-card-img" src="${imgSrc}" alt="${tDef.name}" onerror="this.style.display='none'">
             <div class="detection-card-body">
                 <div class="detection-card-name">${tDef.name}</div>
                 <div class="detection-card-count-row">
                     <button class="btn-c" onclick="changeDetection('${tDef.file}',-1)">−</button>
-                    <input class="detection-card-count-input" id="dcnt_${tDef.file.replace(/[\.\-]/g,'_')}"
+                    <input class="detection-card-count-input" id="dcnt_${tDef.file.replace(/[\.\-\s\(\)]/g,'_')}"
                         type="number" min="0" value="${count}"
                         onchange="setDetection('${tDef.file}',parseInt(this.value)||0)"
                         oninput="setDetection('${tDef.file}',parseInt(this.value)||0)">
                     <button class="btn-c" onclick="changeDetection('${tDef.file}',1)">+</button>
                     <span class="detection-card-label">ชิ้น</span>
                 </div>
-                <div class="detection-card-confidence" id="dconf_${tDef.file.replace(/[\.\-]/g,'_')}">
-                    ${count>0?`🟢 ${count.toLocaleString()} ชิ้น`:"⚪ ไม่พบ"}
+                <div class="detection-card-confidence" id="dconf_${tDef.file.replace(/[\.\-\s\(\)]/g,'_')}">
+                    ${count>0?`🟢 บันทึกแล้ว ${count.toLocaleString()} ชิ้น`:"⚪ ไม่พบในภาพ"}
                 </div>
             </div>`;
         grid.appendChild(card);
@@ -680,22 +639,31 @@ function renderDetectionCards() {
 }
 function changeDetection(file, delta) {
     detectionCounts[file] = Math.max(0,(detectionCounts[file]||0)+delta);
-    const id = file.replace(/[\.\-]/g,'_');
+    const id = file.replace(/[\.\-\s\(\)]/g,'_');
     const el = document.getElementById('dcnt_'+id); if(el) el.value=detectionCounts[file];
+    const tDef = templateDefs.find(t => t.file === file);
+    if (tDef) syncDetectedCountToApp(tDef.name, detectionCounts[file]);
     updateDetectionCardStyle(file);
+    render();
 }
-function setDetection(file, val) { detectionCounts[file]=Math.max(0,val); updateDetectionCardStyle(file); }
+function setDetection(file, val) { 
+    detectionCounts[file]=Math.max(0,val); 
+    const tDef = templateDefs.find(t => t.file === file);
+    if (tDef) syncDetectedCountToApp(tDef.name, detectionCounts[file]);
+    updateDetectionCardStyle(file); 
+    render();
+}
 function updateDetectionCardStyle(file) {
     const count = detectionCounts[file]||0;
-    const id = file.replace(/[\.\-]/g,'_');
+    const id = file.replace(/[\.\-\s\(\)]/g,'_');
     const card = document.getElementById('dcard_'+id);
     if(card) card.className='detection-card'+(count===0?' not-found':'');
     const conf = document.getElementById('dconf_'+id);
-    if(conf) conf.textContent = count>0?`🟢 ${count.toLocaleString()} ชิ้น`:"⚪ ไม่พบ";
+    if(conf) conf.textContent = count>0?`🟢 บันทึกแล้ว ${count.toLocaleString()} ชิ้น`:"⚪ ไม่พบในภาพ";
 }
 
 // =========================================================
-// Reward Milestones
+// Reward Milestones & Core Application Features
 // =========================================================
 const rewardMilestones = [
     {score:5000,rewards:{"เคออส":500,"เหรียญกิลด์คริสตันสีฟ้า":100}},
@@ -778,35 +746,42 @@ const daysData=[
 ];
 
 let appState={currentProfile:"Default",profiles:{"Default":{}}};
-function dotClass(c){if(c==="yellow")return"dot dot-yellow";if(c==="orange")return"dot dot-orange";if(c==="cyan")return"dot dot-cyan";if(c==="green")return"dot dot-green";return"dot dot-none";}
-function fmt(n){return n.toLocaleString("th-TH")}
 function loadFromStorage(){const s=localStorage.getItem("daily_score_app_data");if(s){try{appState=JSON.parse(s);if(!appState.profiles||!Object.keys(appState.profiles).length)appState.profiles={"Default":{}};if(!appState.currentProfile||!appState.profiles[appState.currentProfile])appState.currentProfile=Object.keys(appState.profiles)[0];}catch(e){console.error(e);}}}
 function saveToStorage(){localStorage.setItem("daily_score_app_data",JSON.stringify(appState));}
-function getCounts(){return appState.profiles[appState.currentProfile]||{};}
-function getGrand(){let g=0;const c=getCounts();daysData.forEach(d=>d.items.forEach((it,i)=>g+=(c[d.id+'_'+i]||0)*it.pts));return g;}
+function getCounts() { return appState.profiles[appState.currentProfile] || {}; }
+function getGrand() { let g=0; const c=getCounts(); daysData.forEach(d=>d.items.forEach((it,i)=>g+=(c[d.id+'_'+i]||0)*it.pts)); return g; }
 function getDayTotal(day){let t=0;const c=getCounts();day.items.forEach((_,i)=>t+=(c[day.id+'_'+i]||0)*day.items[i].pts);return t;}
 function updateSummary(){const grand=getGrand();document.getElementById('grand-total').textContent=fmt(grand);const active=daysData.filter(d=>getDayTotal(d)>0).map(d=>d.name).join(', ');document.getElementById('active-days').textContent=active?'วันที่บันทึก: '+active:'ยังไม่ได้กรอกข้อมูล';updateRewards(grand);}
 function updateItem(key,dayId){const day=daysData.find(d=>d.id===dayId);const idx=parseInt(key.split('_')[1]);const counts=getCounts();const sub=(counts[key]||0)*day.items[idx].pts;const subEl=document.getElementById('sub_'+key);if(subEl){subEl.textContent=sub>0?fmt(sub):'—';subEl.className='item-sub'+(sub>0?' sub-active':'');}const cntEl=document.getElementById('cnt_'+key);if(cntEl)cntEl.value=counts[key]||0;document.getElementById('dtotal_'+dayId).textContent=fmt(getDayTotal(day))+' คะแนน';updateSummary();saveToStorage();updateCheckboxStates();}
+function updateProfileDropdown(){const select=document.getElementById('profile-select');select.innerHTML='';Object.keys(appState.profiles).forEach(p=>{const opt=document.createElement('option');opt.value=p;opt.textContent=p;if(p===appState.currentProfile)opt.selected=true;select.appendChild(opt);});}
+function switchProfile(name){if(!appState.profiles[name])return;appState.currentProfile=name;saveToStorage();render();}
+
+function render(){
+    const grid=document.getElementById('days-grid');grid.innerHTML='';const counts=getCounts();
+    daysData.forEach(day=>{
+        const card=document.createElement('div');card.className='day-card';let rows='';
+        day.items.forEach((item,idx)=>{
+            const key=day.id+'_'+idx;if(!counts[key])counts[key]=0;const sub=counts[key]*item.pts;
+            rows+=`<div class="item-row"><div class="${dotClass(item.color)}"></div><div class="item-main"><span class="item-label">${item.label}</span><span class="item-pts">${fmt(item.pts)} แต้ม</span></div><div class="counter"><button class="btn-c" onclick="change('${key}','${day.id}',-1)">−</button><input class="cnt-input" id="cnt_${key}" type="number" pattern="[0-9]*" inputmode="numeric" min="0" value="${counts[key]}" onchange="handleInput('${key}','${day.id}')" oninput="handleInput('${key}','${day.id}')"><button class="btn-c" onclick="change('${key}','${day.id}',1)">+</button></div><span class="item-sub${sub>0?' sub-active':''}" id="sub_${key}">${sub>0?fmt(sub):'—'}</span></div>`;
+        });
+        const dt=getDayTotal(day);card.innerHTML=`<div class="day-header ${day.cls}"><span class="day-name">${day.name}</span><span class="day-total" id="dtotal_${day.id}">${fmt(dt)} คะแนน</span></div><div class="items-list">${rows}</div>`;
+        grid.appendChild(card);
+    });
+    updateCheckboxStates();updateSummary();
+}
+
 function change(key,dayId,delta){const counts=getCounts();counts[key]=Math.max(0,(counts[key]||0)+delta);updateItem(key,dayId);}
 function handleInput(key,dayId){const v=parseInt(document.getElementById('cnt_'+key).value)||0;const counts=getCounts();counts[key]=Math.max(0,v);document.getElementById('cnt_'+key).value=counts[key];updateItem(key,dayId);}
-function updateProfileDropdown(){const select=document.getElementById('profile-select');select.innerHTML='';Object.keys(appState.profiles).forEach(p=>{const opt=document.createElement('option');opt.value=p;opt.textContent=p;if(p===appState.currentProfile)opt.selected=true;select.appendChild(opt);});}
-function createNewProfile(){const input=document.getElementById('new-profile-name');const name=input.value.trim();if(!name)return alert('กรุณากรอกชื่อโปรไฟล์');if(appState.profiles[name])return alert('มีโปรไฟล์ชื่อนี้อยู่แล้ว');appState.profiles[name]={};appState.currentProfile=name;input.value='';saveToStorage();updateProfileDropdown();render();}
-function switchProfile(name){if(!appState.profiles[name])return;appState.currentProfile=name;saveToStorage();render();}
-function deleteProfile(){const name=appState.currentProfile;if(Object.keys(appState.profiles).length<=1)return alert('ต้องมีอย่างน้อย 1 โปรไฟล์');if(!confirm(`ลบโปรไฟล์ "${name}" ใช่หรือไม่?`))return;delete appState.profiles[name];appState.currentProfile=Object.keys(appState.profiles)[0];saveToStorage();updateProfileDropdown();render();}
-function exportProfilesJSON(){const blob=new Blob([JSON.stringify(appState,null,2)],{type:'application/json;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='score_profiles_backup.json';a.click();URL.revokeObjectURL(a.href);}
-function importProfilesJSON(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(e){try{const d=JSON.parse(e.target.result);if(d.profiles&&d.currentProfile){if(confirm('นำเข้าข้อมูลจะเขียนทับข้อมูลปัจจุบัน ดำเนินการต่อ?')){appState=d;saveToStorage();loadFromStorage();updateProfileDropdown();render();alert('นำเข้าสำเร็จ!');}}else alert('โครงสร้างไฟล์ไม่ถูกต้อง');}catch(err){alert('เกิดข้อผิดพลาดในการอ่านไฟล์');}event.target.value='';};reader.readAsText(file);}
-function render(){const grid=document.getElementById('days-grid');grid.innerHTML='';const counts=getCounts();daysData.forEach(day=>{const card=document.createElement('div');card.className='day-card';let rows='';day.items.forEach((item,idx)=>{const key=day.id+'_'+idx;if(!counts[key])counts[key]=0;const sub=counts[key]*item.pts;rows+=`<div class="item-row"><div class="${dotClass(item.color)}"></div><div class="item-main"><span class="item-label">${item.label}</span><span class="item-pts">${fmt(item.pts)} แต้ม</span></div><div class="counter"><button class="btn-c" onclick="change('${key}','${day.id}',-1)">−</button><input class="cnt-input" id="cnt_${key}" type="number" pattern="[0-9]*" inputmode="numeric" min="0" value="${counts[key]}" onchange="handleInput('${key}','${day.id}')" oninput="handleInput('${key}','${day.id}')"><button class="btn-c" onclick="change('${key}','${day.id}',1)">+</button></div><span class="item-sub${sub>0?' sub-active':''}" id="sub_${key}">${sub>0?fmt(sub):'—'}</span></div>`;});const dt=getDayTotal(day);card.innerHTML=`<div class="day-header ${day.cls}"><span class="day-name">${day.name}</span><span class="day-total" id="dtotal_${day.id}">${fmt(dt)} คะแนน</span></div><div class="items-list">${rows}</div>`;grid.appendChild(card);});updateCheckboxStates();updateSummary();}
-function resetAll(){if(!confirm('รีเซ็ตคะแนนของโปรไฟล์นี้ทั้งหมด?'))return;const counts=getCounts();Object.keys(counts).forEach(k=>counts[k]=0);saveToStorage();render();}
+function resetAll(){if(!confirm('รีเซ็ตคะแนนของโปรไฟล์นี้ทั้งหมด?')) return; const counts=getCounts(); Object.keys(counts).forEach(k=>counts[k]=0); saveToStorage(); render();}
 function downloadHTML(){const blob=new Blob([document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='daily_score_calculator.html';a.click();URL.revokeObjectURL(a.href);}
 
-// Init
+// Initialization Execution
 loadFromStorage();
 loadApiKey();
 initProgressMarkers();
 updateProfileDropdown();
 render();
-// โหลด template images ล่วงหน้า (สำหรับแสดงรูปใน card)
-preloadTemplates();
+onOpenCvReady();
 </script>
 </body>
 </html>
