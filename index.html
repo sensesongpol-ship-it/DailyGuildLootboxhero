@@ -298,16 +298,16 @@
 // =========================================================
 const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
 
-// ชื่อไฟล์จริงใน repo (มี .png ต่อท้าย)
+// ชื่อไฟล์จริงใน repo (มี  ต่อท้าย)
 const templateDefs = [
-    { file: "BlessingRoy.JPG.png",   name: "คุ้มครองลอย" },
-    { file: "CrystalRed.JPG.png",    name: "ส่งคริสตัล 10 เม็ด" },
-    { file: "GoldenKey.JPG.png",      name: "กุญแจทอง" },
-    { file: "GuildBlueCoin.JPG.png",  name: "เหรียญกิลด์คริสตัลฟ้า" },
-    { file: "GuildCoin.JPG.png",      name: "เหรียญกิลด์" },
-    { file: "HammerRelic.JPG.png",    name: "โบราณคดีโบราณวัตถุ" },
-    { file: "PotionGh.JPG.png",       name: "ยาวิญญาณเวท" },
-    { file: "Rune.JPG.png",           name: "อัญเชิญรูน" },
+    { file: "BlessingRoy.JPG",   name: "คุ้มครองลอย" },
+    { file: "CrystalRed.JPG",    name: "ส่งคริสตัล 10 เม็ด" },
+    { file: "GoldenKey.JPG",      name: "กุญแจทอง" },
+    { file: "GuildBlueCoin.JPG",  name: "เหรียญกิลด์คริสตัลฟ้า" },
+    { file: "GuildCoin.JPG",      name: "เหรียญกิลด์" },
+    { file: "HammerRelic.JPG",    name: "โบราณคดีโบราณวัตถุ" },
+    { file: "PotionGh.JPG",       name: "ยาวิญญาณเวท" },
+    { file: "Rune.JPG",           name: "อัญเชิญรูน" },
 ];
 
 // Prompt — บังคับ JSON เท่านั้น ห้าม markdown
@@ -329,14 +329,14 @@ Output ONLY the JSON, nothing else:`;
 
 // Map ชื่อ AI → templateDef file
 const nameToFile = {
-    "คุ้มครองลอย":           "BlessingRoy.JPG.png",
-    "ส่งคริสตัล 10 เม็ด":    "CrystalRed.JPG.png",
-    "กุญแจทอง":              "GoldenKey.JPG.png",
-    "เหรียญกิลด์คริสตัลฟ้า": "GuildBlueCoin.JPG.png",
-    "เหรียญกิลด์":           "GuildCoin.JPG.png",
-    "โบราณคดีโบราณวัตถุ":    "HammerRelic.JPG.png",
-    "ยาวิญญาณเวท":           "PotionGh.JPG.png",
-    "อัญเชิญรูน":            "Rune.JPG.png",
+    "คุ้มครองลอย":           "BlessingRoy.JPG",
+    "ส่งคริสตัล 10 เม็ด":    "CrystalRed.JPG",
+    "กุญแจทอง":              "GoldenKey.JPG",
+    "เหรียญกิลด์คริสตัลฟ้า": "GuildBlueCoin.JPG",
+    "เหรียญกิลด์":           "GuildCoin.JPG",
+    "โบราณคดีโบราณวัตถุ":    "HammerRelic.JPG",
+    "ยาวิญญาณเวท":           "PotionGh.JPG",
+    "อัญเชิญรูน":            "Rune.JPG",
 };
 
 // =========================================================
