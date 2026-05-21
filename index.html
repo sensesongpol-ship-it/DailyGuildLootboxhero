@@ -298,55 +298,45 @@
 // =========================================================
 const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
 
-// ชื่อไฟล์จริงใน repo (มี  ต่อท้าย)
+// ชื่อไฟล์จริงใน repo (มี .png ต่อท้าย)
 const templateDefs = [
-    { file: "BlessingRoy.JPG",   name: "คุ้มครองลอย" },
-    { file: "CrystalRed.JPG",    name: "ส่งคริสตัล 10 เม็ด" },
-    { file: "GoldenKey.JPG",      name: "กุญแจทอง" },
-    { file: "GuildBlueCoin.JPG",  name: "เหรียญกิลด์คริสตัลฟ้า" },
-    { file: "GuildCoin.JPG",      name: "เหรียญกิลด์" },
-    { file: "HammerRelic.JPG",    name: "โบราณคดีโบราณวัตถุ" },
-    { file: "PotionGh.JPG",       name: "ยาวิญญาณเวท" },
-    { file: "Rune.JPG",           name: "อัญเชิญรูน" },
+    { file: "BlessingRoy.JPG.png",   name: "คุ้มครองลอย" },
+    { file: "CrystalRed.JPG.png",    name: "ส่งคริสตัล 10 เม็ด" },
+    { file: "GoldenKey.JPG.png",      name: "กุญแจทอง" },
+    { file: "GuildBlueCoin.JPG.png",  name: "เหรียญกิลด์คริสตัลฟ้า" },
+    { file: "GuildCoin.JPG.png",      name: "เหรียญกิลด์" },
+    { file: "HammerRelic.JPG.png",    name: "โบราณคดีโบราณวัตถุ" },
+    { file: "PotionGh.JPG.png",       name: "ยาวิญญาณเวท" },
+    { file: "Rune.JPG.png",           name: "อัญเชิญรูน" },
 ];
 
-// Prompt ส่ง Claude — ชัดเจนมาก บอกชื่อไทยทุกไอเทม
-const CLAUDE_PROMPT = `คุณคือผู้ช่วยวิเคราะห์ภาพเกม RPG
-ในภาพนี้คือหน้าไอเทมคลัง โปรดหาและนับจำนวนไอเทมต่อไปนี้:
+// Prompt — บังคับ JSON เท่านั้น ห้าม markdown
+const CLAUDE_PROMPT = `You are analyzing a game inventory screenshot.
+Find and count these items (read the number shown below/on each icon carefully):
 
-1. คุ้มครองลอย (BlessingRoy) - โล่/เกราะป้องกัน
-2. ส่งคริสตัล 10 เม็ด (CrystalRed) - คริสตัลสีแดง/ชมพู
-3. กุญแจทอง (GoldenKey) - กุญแจสีทอง
-4. เหรียญกิลด์คริสตัลฟ้า (GuildBlueCoin) - เหรียญสีฟ้า/น้ำเงิน
-5. เหรียญกิลด์ (GuildCoin) - เหรียญทั่วไปของกิลด์
-6. โบราณคดีโบราณวัตถุ (HammerRelic) - ค้อน/โบราณวัตถุ
-7. ยาวิญญาณเวท (PotionGh) - ขวดยา/โพชั่น
-8. อัญเชิญรูน (Rune) - รูนหรือสัญลักษณ์เวทมนตร์
+1. คุ้มครองลอย
+2. ส่งคริสตัล 10 เม็ด
+3. กุญแจทอง
+4. เหรียญกิลด์คริสตัลฟ้า
+5. เหรียญกิลด์
+6. โบราณคดีโบราณวัตถุ
+7. ยาวิญญาณเวท
+8. อัญเชิญรูน
 
-ตัวเลขจำนวนไอเทมมักแสดงอยู่ใต้หรือมุมล่างขวาของไอคอน อ่านตัวเลขให้แม่นยำ
-
-ตอบกลับเป็น JSON เท่านั้น ห้ามมีข้อความอื่น:
-{
-  "คุ้มครองลอย": <จำนวน หรือ 0 ถ้าไม่พบ>,
-  "ส่งคริสตัล 10 เม็ด": <จำนวน>,
-  "กุญแจทอง": <จำนวน>,
-  "เหรียญกิลด์คริสตัลฟ้า": <จำนวน>,
-  "เหรียญกิลด์": <จำนวน>,
-  "โบราณคดีโบราณวัตถุ": <จำนวน>,
-  "ยาวิญญาณเวท": <จำนวน>,
-  "อัญเชิญรูน": <จำนวน>
-}`;
+IMPORTANT: Reply with ONLY a raw JSON object. No markdown, no backticks, no explanation.
+Example: {"คุ้มครองลอย":12,"ส่งคริสตัล 10 เม็ด":552,"กุญแจทอง":9,"เหรียญกิลด์คริสตัลฟ้า":400,"เหรียญกิลด์":7750,"โบราณคดีโบราณวัตถุ":142,"ยาวิญญาณเวท":140,"อัญเชิญรูน":1550}
+Output ONLY the JSON, nothing else:`;
 
 // Map ชื่อ AI → templateDef file
 const nameToFile = {
-    "คุ้มครองลอย":           "BlessingRoy.JPG",
-    "ส่งคริสตัล 10 เม็ด":    "CrystalRed.JPG",
-    "กุญแจทอง":              "GoldenKey.JPG",
-    "เหรียญกิลด์คริสตัลฟ้า": "GuildBlueCoin.JPG",
-    "เหรียญกิลด์":           "GuildCoin.JPG",
-    "โบราณคดีโบราณวัตถุ":    "HammerRelic.JPG",
-    "ยาวิญญาณเวท":           "PotionGh.JPG",
-    "อัญเชิญรูน":            "Rune.JPG",
+    "คุ้มครองลอย":           "BlessingRoy.JPG.png",
+    "ส่งคริสตัล 10 เม็ด":    "CrystalRed.JPG.png",
+    "กุญแจทอง":              "GoldenKey.JPG.png",
+    "เหรียญกิลด์คริสตัลฟ้า": "GuildBlueCoin.JPG.png",
+    "เหรียญกิลด์":           "GuildCoin.JPG.png",
+    "โบราณคดีโบราณวัตถุ":    "HammerRelic.JPG.png",
+    "ยาวิญญาณเวท":           "PotionGh.JPG.png",
+    "อัญเชิญรูน":            "Rune.JPG.png",
 };
 
 // =========================================================
@@ -487,25 +477,21 @@ async function doScanGemini() {
         pFill.style.width = '40%';
 
         const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{
                         parts: [
-                            {
-                                inline_data: {
-                                    mime_type: mimeType,
-                                    data: scanImageBase64
-                                }
-                            },
+                            { inline_data: { mime_type: mimeType, data: scanImageBase64 } },
                             { text: CLAUDE_PROMPT }
                         ]
                     }],
                     generationConfig: {
                         temperature: 0,
                         maxOutputTokens: 512,
+                        responseMimeType: 'application/json',
                     }
                 })
             }
@@ -521,11 +507,21 @@ async function doScanGemini() {
         const data = await resp.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-        // Parse JSON จาก response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error('Gemini ไม่ได้ตอบเป็น JSON:\n' + text.slice(0, 300));
+        // Parse JSON — รองรับทั้ง raw JSON และ markdown ```json ... ```
+        let result;
+        try {
+            // ลบ markdown backticks ถ้ามี
+            const cleaned = text
+                .replace(/```json\s*/gi, '')
+                .replace(/```\s*/g, '')
+                .trim();
+            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error('ไม่พบ JSON ใน response:\n' + text.slice(0, 400));
+            result = JSON.parse(jsonMatch[0]);
+        } catch(parseErr) {
+            throw new Error('แปลง JSON ไม่ได้: ' + parseErr.message + '\nResponse: ' + text.slice(0, 300));
+        }
 
-        const result = JSON.parse(jsonMatch[0]);
         detectionCounts = {};
         const logLines = ['<span style="color:#00838f;font-weight:600;">✅ Gemini วิเคราะห์เสร็จแล้ว:</span>'];
 
