@@ -218,15 +218,15 @@
 
         <!-- วิธีสแกน -->
         <div class="scan-method-toggle">
-            <div class="method-btn active" id="method-claude" onclick="setMethod('claude')">🤖 Claude AI <small style="display:block;font-size:9px;opacity:0.8;">(แม่นที่สุด)</small></div>
+            <div class="method-btn active" id="method-claude" onclick="setMethod('claude')">✨ Gemini AI <small style="display:block;font-size:9px;opacity:0.8;">(แม่นที่สุด · ฟรี)</small></div>
             <div class="method-btn" id="method-cv" onclick="setMethod('cv')">🔬 Template Matching <small style="display:block;font-size:9px;opacity:0.8;">(ไม่ต้อง API Key)</small></div>
         </div>
 
-        <!-- Claude AI mode: API key -->
+        <!-- Gemini mode: API key -->
         <div id="claude-api-section">
-            <div class="api-key-label">🔑 Anthropic API Key (เก็บใน LocalStorage เครื่องคุณเท่านั้น)</div>
+            <div class="api-key-label">🔑 Gemini API Key — ได้จาก <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00838f;">aistudio.google.com/apikey</a> (ฟรี ไม่ต้องบัตร)</div>
             <div class="api-key-row">
-                <input type="password" class="api-key-input" id="api-key-input" placeholder="sk-ant-..." value="">
+                <input type="password" class="api-key-input" id="api-key-input" placeholder="AIzaSy...">
                 <button class="btn" onclick="saveApiKey()" style="white-space:nowrap;">บันทึก</button>
                 <button class="btn" onclick="toggleShowKey()" style="padding:8px 10px;">👁</button>
             </div>
@@ -337,7 +337,7 @@ const CLAUDE_PROMPT = `คุณคือผู้ช่วยวิเครา
   "อัญเชิญรูน": <จำนวน>
 }`;
 
-// Map ชื่อ Claude → templateDef file
+// Map ชื่อ AI → templateDef file
 const nameToFile = {
     "คุ้มครองลอย":           "BlessingRoy.JPG.png",
     "ส่งคริสตัล 10 เม็ด":    "CrystalRed.JPG.png",
@@ -375,15 +375,15 @@ function setMethod(m) {
 // API Key management
 // =========================================================
 function loadApiKey() {
-    const k = localStorage.getItem('anthropic_api_key') || '';
+    const k = localStorage.getItem('gemini_api_key') || '';
     document.getElementById('api-key-input').value = k;
     updateApiKeyStatus(k);
 }
 function saveApiKey() {
     const k = document.getElementById('api-key-input').value.trim();
-    localStorage.setItem('anthropic_api_key', k);
+    localStorage.setItem('gemini_api_key', k);
     updateApiKeyStatus(k);
-    alert(k ? '✓ บันทึก API Key แล้ว' : 'ลบ API Key แล้ว');
+    alert(k ? '✓ บันทึก Gemini API Key แล้ว' : 'ลบ API Key แล้ว');
 }
 function updateApiKeyStatus(k) {
     const el = document.getElementById('api-key-status');
@@ -394,7 +394,7 @@ function toggleShowKey() {
     const el = document.getElementById('api-key-input');
     el.type = el.type === 'password' ? 'text' : 'password';
 }
-function getApiKey() { return localStorage.getItem('anthropic_api_key') || ''; }
+function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
 // =========================================================
 // OpenCV Template load
@@ -457,50 +457,59 @@ document.getElementById('upload-zone').addEventListener('drop', e => {
 // =========================================================
 async function doScan() {
     if (!scanImageElement) return alert('กรุณาอัปโหลดภาพก่อน');
-    if (currentMethod === 'claude') await doScanClaude();
+    if (currentMethod === 'claude') await doScanGemini();
     else await doScanCV();
 }
 
 // =========================================================
-// METHOD 1: Claude Vision API — แม่นที่สุด
+// METHOD 1: Gemini Vision API — แม่นที่สุด ฟรี ไม่ต้องบัตร
 // =========================================================
-async function doScanClaude() {
+async function doScanGemini() {
     const apiKey = getApiKey();
-    if (!apiKey) return alert('กรุณากรอก Anthropic API Key ก่อน\n(ได้จาก console.anthropic.com → API Keys)');
+    if (!apiKey) return alert('กรุณากรอก Gemini API Key ก่อน\nได้จาก: https://aistudio.google.com/apikey');
 
     const btn = document.getElementById('btn-do-scan');
     const pBar = document.getElementById('scan-progress-bar');
     const pFill = document.getElementById('scan-progress-fill');
-    btn.disabled = true;
-    btn.textContent = '🤖 กำลังให้ Claude วิเคราะห์ภาพ...';
-    pBar.classList.add('show');
-    pFill.style.width = '30%';
+    const log  = document.getElementById('scan-log');
 
-    const log = document.getElementById('scan-log');
+    btn.disabled = true;
+    btn.textContent = '🤖 Gemini กำลังวิเคราะห์ภาพ...';
+    pBar.classList.add('show');
+    pFill.style.width = '20%';
     log.classList.add('show');
-    log.innerHTML = '🤖 กำลังส่งภาพให้ Claude วิเคราะห์...';
+    log.innerHTML = '🤖 กำลังส่งภาพให้ Gemini วิเคราะห์...';
+
+    // ตรวจ mime type จาก base64 header
+    const mimeType = scanImageBase64.startsWith('/9j') ? 'image/jpeg' : 'image/png';
 
     try {
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true',
-            },
-            body: JSON.stringify({
-                model: 'claude-opus-4-5',
-                max_tokens: 512,
-                messages: [{
-                    role: 'user',
-                    content: [
-                        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: scanImageBase64 } },
-                        { type: 'text', text: CLAUDE_PROMPT }
-                    ]
-                }]
-            })
-        });
+        pFill.style.width = '40%';
+
+        const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            {
+                                inline_data: {
+                                    mime_type: mimeType,
+                                    data: scanImageBase64
+                                }
+                            },
+                            { text: CLAUDE_PROMPT }
+                        ]
+                    }],
+                    generationConfig: {
+                        temperature: 0,
+                        maxOutputTokens: 512,
+                    }
+                })
+            }
+        );
 
         pFill.style.width = '80%';
 
@@ -510,25 +519,24 @@ async function doScanClaude() {
         }
 
         const data = await resp.json();
-        const text = data.content.map(c => c.text || '').join('');
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-        // parse JSON จาก response
+        // Parse JSON จาก response
         const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error('Claude ไม่ได้ตอบเป็น JSON: ' + text.slice(0,200));
+        if (!jsonMatch) throw new Error('Gemini ไม่ได้ตอบเป็น JSON:\n' + text.slice(0, 300));
 
         const result = JSON.parse(jsonMatch[0]);
         detectionCounts = {};
-        let logLines = ['<span style="color:#00838f;font-weight:600;">🤖 Claude AI วิเคราะห์เสร็จแล้ว:</span>'];
+        const logLines = ['<span style="color:#00838f;font-weight:600;">✅ Gemini วิเคราะห์เสร็จแล้ว:</span>'];
 
         for (const [name, count] of Object.entries(result)) {
             const file = nameToFile[name];
             if (!file) continue;
             detectionCounts[file] = parseInt(count) || 0;
-            if (detectionCounts[file] > 0) {
+            if (detectionCounts[file] > 0)
                 logLines.push(`<span class="log-found">✓ ${name}: ${detectionCounts[file].toLocaleString()}</span>`);
-            } else {
+            else
                 logLines.push(`<span class="log-notfound">✗ ${name}: ไม่พบ</span>`);
-            }
         }
 
         pFill.style.width = '100%';
