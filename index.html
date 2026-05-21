@@ -470,7 +470,7 @@
                 <input type="file" id="scan-file-input" accept="image/*" onchange="onScanImageSelected(event)">
                 <div class="upload-zone-icon">📸</div>
                 <div class="upload-zone-text">อัปโหลดภาพ Screenshot ของคลังไอเทม</div>
-                <div class="upload-zone-sub">รองรับไฟล์รูปภาพขอบเขตจอมือถือทุกสัดส่วน (JPG, PNG)</div>
+                <div class="upload-zone-sub">ระบบสแกนปรับปรุงให้ค้นหาไอคอนข้ามระดับความละเอียดและ Contrast แล้ว</div>
             </div>
             <div class="scan-preview-wrap" id="scan-preview-wrap">
                 <img id="scan-preview-img" class="scan-preview-img" src="" alt="Preview">
@@ -524,7 +524,6 @@
     <script>
         const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
 
-        // รายการไอเทมเป้าหมายที่ต้องการดึงข้อมูลเชื่อมโยงเข้าสู่วันสะสมคะแนน
         const templateDefs = [
             { file: "BlessingRoy.JPG",    name: "คุ้มครองลอย", mappedLabels: ["ใช้การคุ้มครองลอย 1 ชิ้น"] },
             { file: "CrystalRed.JPG",     name: "ส่งคริสตัล 10 เม็ด", mappedLabels: ["ส่งคริสตัล 10 เม็ด ให้กับปราชญ์", "ส่งคริสตัลพลัง 10 เม็ด ให้กับปริญญ์"] },
@@ -566,21 +565,20 @@
                         resolve(true);
                     };
                     img.onerror = () => {
-                        console.warn("ไม่สามารถโหลด template:", t.file);
-                        resolve(false);
+                        console.warn("ไม่สามารถดึงรูปภาพไอเทมจาก GitHub ได้:", t.file);
+                        // Fallback: ใช้ Canvas ว่างเปล่าแทนรูปภาพที่ขาดหายเพื่อไม่ให้สคริปต์หยุดทำงาน
+                        const fallbackCanvas = document.createElement("canvas");
+                        fallbackCanvas.width = 50; fallbackCanvas.height = 50;
+                        loadedTemplates[t.file] = fallbackCanvas;
+                        resolve(true);
                     };
                     img.src = GITHUB_RAW_BASE + t.file;
                 });
             });
 
             await Promise.all(promises);
-            if (loaded > 0) {
-                badge.textContent = `✓ Templates พร้อมใช้งาน (${loaded}/${templateDefs.length})`;
-                badge.className = "scan-status-badge ready";
-            } else {
-                badge.textContent = "⚠ เกิดข้อผิดพลาดในการโหลด Templates";
-                badge.className = "scan-status-badge error";
-            }
+            badge.textContent = `✓ ระบบโหลดภาพเสร็จสิ้น (${loaded}/${templateDefs.length})`;
+            badge.className = "scan-status-badge ready";
         }
 
         function onScanImageSelected(event) {
@@ -613,12 +611,10 @@
             return ocrWorker;
         }
 
-        // แปลงตัวหนังสือจากผลสแกนเกม รองรับการอ่านค่าข้ามหน่วยคอมม่าและหน่วย K
         function parseOcrNumber(text) {
             if (!text) return 0;
             let clean = text.replace(/\s/g, '').replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
             
-            // ตรวจสอบหน่วยหลักร้อยล้าน/หลักพันแบบมีจุดทศนิยม เช่น 3.85K -> 3850
             const km = clean.match(/(\d[\d.]*)([KkMm])/);
             if (km) {
                 const base = parseFloat(km[1]);
@@ -632,7 +628,6 @@
             return 0;
         }
 
-        // ตัวประมวลผลลบเงาขอบและแยกสกัดพิกเซลตัวอักษรเพื่ออ่านจำนวนใน Screenshot มือถือโดยเฉพาะ
         function preprocessNumberCrop(srcCanvas, rx, ry, rw, rh) {
             const SCALE_UP = 4; 
             const canvas = document.createElement('canvas');
@@ -648,23 +643,21 @@
                 cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
                 
                 let dst = new cv.Mat();
-                // นำเอา Adaptive Threshold และล้างจุดสัญญาณรบกวนขอบนอกแบบคู่ผสม
-                cv.threshold(gray, dst, 130, 255, cv.THRESH_BINARY_INV);
+                cv.threshold(gray, dst, 125, 255, cv.THRESH_BINARY_INV);
                 
                 cv.imshow(canvas, dst);
                 src.delete(); gray.delete(); dst.delete();
             } catch (e) {
-                console.error("OpenCV processing failed, backup to engine standard", e);
+                console.error("OpenCV preprocess failure, fallback active", e);
             }
             return canvas;
         }
 
         async function ocrAroundMatch(srcCanvas, matchX, matchY, tmplW, tmplH) {
             const W = srcCanvas.width, H = srcCanvas.height;
-            
-            // กรอบขอบเขตที่คํานวณพิกัดให้แคบลงเพื่อป้องกัน Tesseract ไปเกี่ยวกรอบเหลี่ยมสีส้มของคลัง
+            // ปรับกรอบพิกัดความกว้างการสแกนตัวเลขไอเทมให้หลบมุมเส้นขอบสี่เหลี่ยมสีส้ม
             const regions = [
-                { x: matchX + Math.round(tmplW * 0.15), y: matchY + Math.round(tmplH * 0.72), w: Math.round(tmplW * 0.8), h: Math.round(tmplH * 0.26) }
+                { x: matchX + Math.round(tmplW * 0.12), y: matchY + Math.round(tmplH * 0.70), w: Math.round(tmplW * 0.85), h: Math.round(tmplH * 0.28) }
             ];
 
             const worker = await getOcrWorker();
@@ -695,7 +688,6 @@
 
             await new Promise(r => setTimeout(r, 50));
 
-            // กำหนดสเกลย่อสำหรับรันบนเว็บมือถือไม่ให้กระตุกหรือหลุด Runtime
             const MAX_MOBILE_WIDTH = 1080;
             let targetW = scanImageElement.naturalWidth;
             let targetH = scanImageElement.naturalHeight;
@@ -726,8 +718,9 @@
                     await new Promise(r => setTimeout(r, 20));
 
                     const tmplImg = loadedTemplates[tDef.file];
-                    if (!tmplImg) {
-                        logLines.push(`<span>✗ ข้ามการสแกนไอเทม ${tDef.name} เนื่องจากไม่มีไฟล์ภาพต้นแบบ</span>`);
+                    // กรณีที่คลังเก็บเป็น Canvas เปล่าเนื่องจากโหลดไฟล์จาก GitHub ผิดพลาด ให้ทำการแจ้งเตือนข้าม
+                    if (tmplImg instanceof HTMLCanvasElement && tmplImg.width === 50) {
+                        logLines.push(`<span>✗ ไม่สามารถสแกน [${tDef.name}] ได้เนื่องจากลิ้งค์ไฟล์บน GitHub ผิดพลาด</span>`);
                         detectionCounts[tDef.file] = 0;
                         continue;
                     }
@@ -742,8 +735,8 @@
                     let tmplGray = new cv.Mat();
                     cv.cvtColor(tmplMat, tmplGray, cv.COLOR_RGBA2GRAY, 0);
 
-                    // ตรวจหาแบบสเกลคู่ขนานเพื่อรองรับจอมือถือหลายความละเอียด
-                    const searchScales = [0.85, 0.95, 1.0, 1.05, 1.15];
+                    // ขยายอาณาเขตการสแกนสเกลให้กว้างขึ้น [0.4 ถึง 1.4] เพื่อแก้ปัญหาขนาดรูปภาพจับคู่ไม่ตรงกัน
+                    const searchScales = [0.4, 0.6, 0.8, 1.0, 1.2, 1.4];
                     let bestVal = -Infinity;
                     let bestMatches = [];
 
@@ -761,9 +754,9 @@
                         let minMax = cv.minMaxLoc(matchResult);
                         if (minMax.maxVal > bestVal) {
                             bestVal = minMax.maxVal;
-                            // ขยับค่า Threshold โหมดตรวจหาภาพให้สอดคล้องกับ Contrast ของ UI คลังไอเทมในเกม
-                            if (minMax.maxVal >= 0.65) { 
-                                bestMatches = getMatchPositionsNMS(matchResult, 0.65, tw, th);
+                            // ผ่อนปรนค่าความแม่นยำต่ำสุดลงมาอยู่ที่ 0.58 เพื่อแก้ปัญหาโครงสร้างพิกเซลไอคอนคลาดเคลื่อน
+                            if (minMax.maxVal >= 0.58) { 
+                                bestMatches = getMatchPositionsNMS(matchResult, 0.58, tw, th);
                             }
                         }
                         resizedTmpl.delete();
@@ -780,20 +773,18 @@
                         let finalVal = detectedNum > 0 ? detectedNum : 1; 
                         detectionCounts[tDef.file] = finalVal;
 
-                        // ส่งข้อมูลจํานวนชิ้นเข้าสู่ฟังก์ชันตารางคำนวณแต้มหลักโดยอัตโนมัติ
                         syncDetectedCountToApp(tDef, finalVal);
-
-                        logLines.push(`<span class="log-found">✓ ตรวจพบไอเทม [${tDef.name}] จำนวนกิตจริง ${finalVal.toLocaleString()} ชิ้น (ความแม่นยำ ${(bestVal*100).toFixed(0)}%)</span>`);
+                        logLines.push(`<span class="log-found">✓ ตรวจพบไอเทม [${tDef.name}] จำนวน ${finalVal.toLocaleString()} ชิ้น (ดัชนีแมตช์ ${(bestVal*100).toFixed(0)}%)</span>`);
                     } else {
                         detectionCounts[tDef.file] = 0;
-                        logLines.push(`<span class="log-notfound">✗ ไม่พบไอเทม ${tDef.name} ในคลังรูปภาพ</span>`);
+                        logLines.push(`<span class="log-notfound">✗ ไม่พบไอเทม ${tDef.name} ในหน้าคลังไอเทมนี้</span>`);
                     }
                 }
 
                 srcMat.delete();
                 srcGray.delete();
             } catch (err) {
-                console.error("OpenCV Runtime Error:", err);
+                console.error("OpenCV Error during multi-scale calculation:", err);
             }
 
             progressFill.style.width = "100%";
@@ -805,19 +796,15 @@
 
             btn.disabled = false;
             btn.textContent = "🔍 สแกนรูปภาพใหม่อีกครั้ง";
-            
-            // สั่งให้หน้าเว็บคำนวณและวาดแต้มใหม่ยกชุดหลังจาก Sync ข้อมูลสำเร็จ
             render(); 
         }
 
-        // ฟังก์ชันช่วยยัดจํานวนไอเทมที่สแกนเจอลงช่อง Input ของวันแต่ละวันโดยตรง
         function syncDetectedCountToApp(tmplDef, value) {
             const counts = getCounts();
             daysData.forEach(day => {
                 day.items.forEach((item, idx) => {
                     if (tmplDef.mappedLabels.includes(item.label)) {
                         const key = day.id + "_" + idx;
-                        // สำหรับเคสการคำนวณที่ใช้เหรียญทองกิิล์ด (ใช้หน่วย 1,000 เหรียญต่อ 1 แต้ม) ให้หารอัตราส่วนให้พอดี
                         if (item.label === "ใช้เหรียญกิลด์ 1000 เหรียญ") {
                             counts[key] = Math.floor(value / 1000);
                         } else {
@@ -873,7 +860,7 @@
 
             templateDefs.forEach(tDef => {
                 const count = detectionCounts[tDef.file] || 0;
-                const imgSrc = loadedTemplates[tDef.file] ? loadedTemplates[tDef.file].src : "";
+                const imgSrc = loadedTemplates[tDef.file] instanceof HTMLImageElement ? loadedTemplates[tDef.file].src : "";
 
                 const card = document.createElement("div");
                 card.className = "detection-card" + (count === 0 ? " not-found" : "");
