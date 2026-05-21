@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap"
         rel="stylesheet">
     <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -546,7 +547,7 @@
 
         // BASE URL ของรูป Template บน GitHub (raw)
         // เปลี่ยน <USERNAME> และ <REPO> ให้ตรงกับของคุณ
-        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
+        const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/<USERNAME>/<REPO>/main/";
 
         // รายการ Template ทั้งหมด: { file, name, matchLabel }
         // matchLabel คือชื่อที่จะแสดงในการ์ด (อาจต่างจากชื่อใน daysData)
@@ -630,7 +631,127 @@
             reader.readAsDataURL(file);
         }
 
-        // ฟังก์ชัน Template Matching หลัก (NCC multi-scale)
+        // =========================================================
+        // Tesseract worker (สร้างครั้งเดียว)
+        // =========================================================
+        let ocrWorker = null;
+        async function getOcrWorker() {
+            if (ocrWorker) return ocrWorker;
+            ocrWorker = await Tesseract.createWorker('eng', 1, { logger: () => {} });
+            await ocrWorker.setParameters({
+                tessedit_char_whitelist: '0123456789,./KkMm ',
+                tessedit_pageseg_mode: '7',  // single line
+            });
+            return ocrWorker;
+        }
+
+        // แปลง text → number รองรับ 1,234 / 1.2K / 1M
+        function parseOcrNumber(text) {
+            const clean = text.replace(/\s/g, '').replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
+            const km = clean.match(/(\d[\d,.]*)([KkMm])/);
+            if (km) {
+                const base = parseFloat(km[1].replace(/,/g, ''));
+                return Math.round(base * (km[2].toLowerCase() === 'k' ? 1000 : 1000000));
+            }
+            const nums = clean.match(/\d[\d,]*/g);
+            if (nums && nums.length > 0) {
+                return parseInt(nums.sort((a, b) => b.length - a.length)[0].replace(/,/g, ''), 10) || 0;
+            }
+            return 0;
+        }
+
+        // ทำ OCR บน canvas หนึ่งอัน
+        async function ocrCanvas(canvas) {
+            try {
+                const worker = await getOcrWorker();
+                const { data: { text } } = await worker.recognize(canvas);
+                return parseOcrNumber(text);
+            } catch(e) { return 0; }
+        }
+
+        // สร้าง canvas crop จาก srcCanvas ที่ (rx,ry,rw,rh) แล้ว preprocess หลายแบบ
+        function makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode) {
+            const SCALE = 4; // scale up 4x เพื่อความชัด
+            const c = document.createElement('canvas');
+            c.width  = rw * SCALE;
+            c.height = rh * SCALE;
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(srcCanvas, rx, ry, rw, rh, 0, 0, c.width, c.height);
+
+            const imgData = ctx.getImageData(0, 0, c.width, c.height);
+            const d = imgData.data;
+
+            if (mode === 'dark_bg') {
+                // ตัวเลขสีขาว/เหลืองบนพื้นมืด → invert แล้ว threshold
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                    const v = g > 160 ? 0 : 255; // ตัวสว่าง→ดำ, พื้นมืด→ขาว
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else if (mode === 'light_bg') {
+                // ตัวเลขสีเข้มบนพื้นขาว → threshold ตรง
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                    const v = g < 128 ? 0 : 255;
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else if (mode === 'yellow') {
+                // ดึงเฉพาะ channel สีเหลือง (R สูง, G สูง, B ต่ำ)
+                for (let i = 0; i < d.length; i += 4) {
+                    const isYellow = d[i] > 150 && d[i+1] > 120 && d[i+2] < 100;
+                    const v = isYellow ? 0 : 255;
+                    d[i] = d[i+1] = d[i+2] = v;
+                }
+            } else {
+                // raw grayscale
+                for (let i = 0; i < d.length; i += 4) {
+                    const g = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
+                    d[i] = d[i+1] = d[i+2] = g;
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            return c;
+        }
+
+        // OCR บริเวณรอบๆ icon หลายตำแหน่ง + หลาย mode
+        async function ocrAroundMatch(srcCanvas, matchX, matchY, tmplW, tmplH) {
+            const W = srcCanvas.width, H = srcCanvas.height;
+
+            // กำหนดพื้นที่ค้นหาตัวเลขรอบๆ icon
+            const pw = tmplW, ph = tmplH;
+            const regions = [
+                // ใต้ icon (ตัวเลขมักอยู่ใต้ไอคอน)
+                { x: matchX - Math.round(pw*0.3), y: matchY + ph,               w: pw + Math.round(pw*0.6), h: Math.round(ph*0.8) },
+                // มุมขวาล่าง (badge จำนวนเล็ก)
+                { x: matchX + Math.round(pw*0.4), y: matchY + Math.round(ph*0.5), w: Math.round(pw*0.9),     h: Math.round(ph*0.6) },
+                // ขวาของ icon
+                { x: matchX + pw,                 y: matchY,                     w: Math.round(pw*1.5),      h: ph },
+                // ทั้ง icon + ใต้ icon (crop กว้างๆ)
+                { x: matchX - Math.round(pw*0.2), y: matchY,                     w: pw + Math.round(pw*0.4), h: ph + Math.round(ph*0.9) },
+                // บน icon (บางเกมแสดงเลขด้านบน)
+                { x: matchX - Math.round(pw*0.2), y: matchY - Math.round(ph*0.5), w: pw + Math.round(pw*0.4), h: Math.round(ph*0.6) },
+            ];
+
+            const modes = ['dark_bg', 'yellow', 'light_bg', 'raw'];
+
+            for (const reg of regions) {
+                const rx = Math.max(0, reg.x), ry = Math.max(0, reg.y);
+                const rw = Math.min(reg.w, W - rx), rh = Math.min(reg.h, H - ry);
+                if (rw < 6 || rh < 6) continue;
+
+                for (const mode of modes) {
+                    const crop = makeCropCanvas(srcCanvas, rx, ry, rw, rh, mode);
+                    const num = await ocrCanvas(crop);
+                    if (num > 0 && num < 10000000) return num; // sanity check
+                }
+            }
+            return 0;
+        }
+
+        // =========================================================
+        // ฟังก์ชัน Template Matching หลัก + OCR
+        // =========================================================
         async function doScan() {
             if (!cvReady || !scanImageElement) return;
 
@@ -652,14 +773,19 @@
             const srcCtx = srcCanvas.getContext("2d");
             srcCtx.drawImage(scanImageElement, 0, 0);
 
+            // โหลด OCR worker ล่วงหน้า
+            btn.textContent = "⏳ โหลด OCR...";
+            await getOcrWorker();
+
             let logLines = [];
             const total = templateDefs.length;
 
             for (let ti = 0; ti < total; ti++) {
                 const tDef = templateDefs[ti];
-                progressFill.style.width = ((ti / total) * 100) + "%";
+                const pct = Math.round((ti / total) * 100);
+                progressFill.style.width = pct + "%";
+                btn.textContent = `⏳ สแกน ${ti+1}/${total}: ${tDef.name}`;
 
-                // yield เพื่อให้ UI อัปเดต
                 await new Promise(r => setTimeout(r, 10));
 
                 const tmplImg = loadedTemplates[tDef.file];
@@ -669,30 +795,26 @@
                     continue;
                 }
 
-                // วาด template
                 const tmplCanvas = document.createElement("canvas");
                 tmplCanvas.width = tmplImg.naturalWidth;
                 tmplCanvas.height = tmplImg.naturalHeight;
                 tmplCanvas.getContext("2d").drawImage(tmplImg, 0, 0);
 
+                const THRESHOLD = 0.72;
                 let bestVal = -Infinity;
-                let bestCount = 0;
-                const THRESHOLD = 0.75; // ค่า threshold ความคล้าย (0-1)
+                // เก็บทุก match position ของ scale ที่ดีที่สุด
+                let bestMatches = []; // [{x, y, w, h, val}]
+                let bestScaleW = 0, bestScaleH = 0;
 
                 try {
                     const src = cv.imread(srcCanvas);
                     const tmpl = cv.imread(tmplCanvas);
-
-                    // ลอง scale หลายขนาด
                     const scales = [0.5, 0.75, 1.0, 1.25, 1.5];
-                    let bestCountForTemplate = 0;
-                    let bestValForTemplate = -Infinity;
 
                     for (const scale of scales) {
                         const tw = Math.round(tmplImg.naturalWidth * scale);
                         const th = Math.round(tmplImg.naturalHeight * scale);
-                        if (tw < 8 || th < 8) continue;
-                        if (tw > srcCanvas.width || th > srcCanvas.height) continue;
+                        if (tw < 8 || th < 8 || tw > srcCanvas.width || th > srcCanvas.height) continue;
 
                         const tmplResized = new cv.Mat();
                         cv.resize(tmpl, tmplResized, new cv.Size(tw, th));
@@ -700,13 +822,14 @@
                         const result = new cv.Mat();
                         cv.matchTemplate(src, tmplResized, result, cv.TM_CCOEFF_NORMED);
 
-                        // นับจำนวนจุดที่ตรงตาม threshold (non-maximum suppression แบบง่าย)
-                        const count = countMatches(result, THRESHOLD, tw, th);
                         const { maxVal } = cv.minMaxLoc(result);
+                        const matches = getMatchPositions(result, THRESHOLD, tw, th);
 
-                        if (maxVal > bestValForTemplate) {
-                            bestValForTemplate = maxVal;
-                            bestCountForTemplate = count;
+                        if (maxVal > bestVal) {
+                            bestVal = maxVal;
+                            bestMatches = matches.map(m => ({ ...m, w: tw, h: th }));
+                            bestScaleW = tw;
+                            bestScaleH = th;
                         }
 
                         tmplResized.delete();
@@ -716,25 +839,35 @@
                     src.delete();
                     tmpl.delete();
 
-                    bestVal = bestValForTemplate;
-                    bestCount = bestCountForTemplate;
-
                 } catch (err) {
                     console.error("Template matching error:", tDef.file, err);
                 }
 
-                detectionCounts[tDef.file] = bestCount;
-
-                if (bestCount > 0) {
-                    logLines.push(`<span class="log-found">✓ ${tDef.name} — พบ ${bestCount} จุด (confidence: ${(bestVal * 100).toFixed(1)}%)</span>`);
-                } else {
-                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่พบ</span>`);
+                if (bestMatches.length === 0) {
+                    detectionCounts[tDef.file] = 0;
+                    logLines.push(`<span class="log-notfound">✗ ${tDef.name} — ไม่พบในภาพ</span>`);
+                    continue;
                 }
+
+                // อ่านตัวเลขจากตำแหน่ง match แรก (ที่ confidence สูงสุด)
+                btn.textContent = `🔢 OCR: ${tDef.name}`;
+                await new Promise(r => setTimeout(r, 5));
+
+                const best = bestMatches[0];
+                let ocrNum = await ocrAroundMatch(srcCanvas, best.x, best.y, best.w, best.h);
+
+                // ถ้า OCR ไม่ได้ตัวเลข ใช้จำนวน match แทน
+                const finalCount = ocrNum > 0 ? ocrNum : bestMatches.length;
+                detectionCounts[tDef.file] = finalCount;
+
+                const ocrNote = ocrNum > 0
+                    ? `📖 OCR อ่านได้: <strong>${finalCount.toLocaleString()}</strong>`
+                    : `🔢 พบไอคอน ${bestMatches.length} จุด (OCR ไม่ได้เลข)`;
+
+                logLines.push(`<span class="log-found">✓ ${tDef.name} — ${ocrNote} (conf: ${(bestVal*100).toFixed(1)}%)</span>`);
             }
 
             progressFill.style.width = "100%";
-
-            // แสดงผล
             renderDetectionCards();
             document.getElementById("scan-log").innerHTML = logLines.join("<br>");
             document.getElementById("scan-log").classList.add("show");
@@ -744,42 +877,42 @@
             btn.textContent = "🔍 สแกนอีกครั้ง";
         }
 
-        // นับ Matches โดยทำ simple NMS (non-max suppression)
-        function countMatches(resultMat, threshold, tmplW, tmplH) {
+        // คืน array ของตำแหน่ง match (พร้อม NMS)
+        function getMatchPositions(resultMat, threshold, tmplW, tmplH) {
             const data = resultMat.data32F;
             const cols = resultMat.cols;
             const rows = resultMat.rows;
-            let count = 0;
             const visited = new Uint8Array(cols * rows);
-            const minDist = Math.max(tmplW, tmplH) * 0.5; // ระยะห่างขั้นต่ำระหว่างจุด
-
-            // เก็บจุดที่เกิน threshold ทั้งหมดก่อน
+            const minDist = Math.max(tmplW, tmplH) * 0.5;
             const candidates = [];
+
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const val = data[r * cols + c];
                     if (val >= threshold) candidates.push({ r, c, val });
                 }
             }
-            // เรียงจากมากไปน้อย
             candidates.sort((a, b) => b.val - a.val);
 
+            const results = [];
             for (const pt of candidates) {
                 const idx = pt.r * cols + pt.c;
                 if (visited[idx]) continue;
-                count++;
-                // mark บริเวณรอบๆ ให้ visited
+                results.push({ x: pt.c, y: pt.r, val: pt.val });
                 const r0 = Math.max(0, Math.round(pt.r - minDist));
                 const r1 = Math.min(rows - 1, Math.round(pt.r + minDist));
                 const c0 = Math.max(0, Math.round(pt.c - minDist));
                 const c1 = Math.min(cols - 1, Math.round(pt.c + minDist));
-                for (let rr = r0; rr <= r1; rr++) {
-                    for (let cc = c0; cc <= c1; cc++) {
+                for (let rr = r0; rr <= r1; rr++)
+                    for (let cc = c0; cc <= c1; cc++)
                         visited[rr * cols + cc] = 1;
-                    }
-                }
             }
-            return count;
+            return results;
+        }
+
+        // (compat alias เดิม)
+        function countMatches(resultMat, threshold, tmplW, tmplH) {
+            return getMatchPositions(resultMat, threshold, tmplW, tmplH).length;
         }
 
         // แสดง Cards ผลการตรวจจับ
@@ -810,7 +943,7 @@
                             <span class="detection-card-label">ชิ้น</span>
                         </div>
                         <div class="detection-card-confidence" id="dconf_${tDef.file.replace(/\./g,'_')}">
-                            ${count > 0 ? `🟢 พบ ${count} จุด` : "⚪ ไม่พบในภาพ"}
+                            ${count > 0 ? `🟢 จำนวน: ${count.toLocaleString()} ชิ้น` : "⚪ ไม่พบในภาพ"}
                         </div>
                     </div>
                 `;
