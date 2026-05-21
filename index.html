@@ -187,7 +187,7 @@
         </div>
 
         <div class="scan-method-toggle">
-            <div class="method-btn active" id="method-claude" onclick="setMethod('claude')">✨ Gemini AI <small style="display:block;font-size:9px;opacity:0.8;">(แม่นยำสูง · ล้างพิกเซลตัวอักษร)</small></div>
+            <div class="method-btn active" id="method-claude" onclick="setMethod('claude')">✨ Gemini AI <small style="display:block;font-size:9px;opacity:0.8;">(แม่นยำสูง · ซิงก์เวอร์ชันคลาวด์ v1beta)</small></div>
             <div class="method-btn" id="method-cv" onclick="setMethod('cv')">🔬 Template Matching <small style="display:block;font-size:9px;opacity:0.8;">(ไม่ต้องใช้ API Key)</small></div>
         </div>
 
@@ -259,7 +259,6 @@
 <script>
 const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/sensesongpol-ship-it/DailyGuildLootboxhero/main/";
 
-// รายชื่อรูปภาพไอเทมตามจริงในคลังโปรเจกต์ของคุณ
 const templateDefs = [
     { file: "BlessingRoy.JPG",    name: "คุ้มครองลอย" },
     { file: "CrystalRed.JPG",     name: "ส่งคริสตัล 10 เม็ด" },
@@ -282,7 +281,6 @@ const nameToFile = {
     "อัญเชิญรูน":            "Rune.JPG",
 };
 
-// ปรับปรุง System Prompt ให้บังคับแปลงหน่วย K เป็นตัวเลขเต็มหลัก เช่น 3.51K -> 3510 โดยส่งกลับมาเป็นโครงสร้างดิบ
 const CLAUDE_PROMPT = `You are an automated game scanner. Analyze this inventory image.
 Calculate and find numbers or counts under these specific keys:
 - คุ้มครองลอย
@@ -296,7 +294,7 @@ Calculate and find numbers or counts under these specific keys:
 
 Rule: Convert scales (like 3.51K into 3510, 7.75K into 7750) to exact integers.
 Output format MUST be a single raw JSON object block ONLY. Do not write markdown, do not wrap in backticks.
-Example output: {"คุ้มครองลอย":12,"ส่งคริสตัล 10 เม็ด":552,"กุญแจทอง":9,"เหรียญกิลด์คริสตัลฟ้า":400,"เหรียญกิลด์":7750,"โบราณคดีโบราณวัตถุ":142,"ยาวิญญาณเวท":140,"อัญเชิญรูน":3510}`;
+Example output structure: {"คุ้มครองลอย":12,"ส่งคริสตัล 10 เม็ด":552,"กุญแจทอง":9,"เหรียญกิลด์คริสตัลฟ้า":400,"เหรียญกิลด์":7750,"โบราณคดีโบราณวัตถุ":142,"ยาวิญญาณเวท":140,"อัญเชิญรูน":3510}`;
 
 let loadedTemplates = {};
 let cvReady = false;
@@ -333,6 +331,7 @@ function toggleShowKey() {
     const el = document.getElementById('api-key-input');
     el.type = el.type === 'password' ? 'text' : 'password';
 }
+// ดึง API Key
 function getApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
 function onOpenCvReady() {
@@ -377,7 +376,7 @@ async function doScan() {
     else await doScanCV();
 }
 
-// ── ฟังก์ชันเรียกใช้งานคลาวด์สแกนภาพ ปรับปรุงโครงสร้างแก้ Payload Error ──
+// ── อัปเดตสลับพาส Endpoint กลับไปใช้โครงสร้าง v1beta ──
 async function doScanGemini() {
     const apiKey = getApiKey();
     if (!apiKey) return alert('กรุณากรอก Gemini API Key ก่อนใช้งาน');
@@ -397,19 +396,19 @@ async function doScanGemini() {
     const mimeType = scanImageBase64.startsWith('/9j') ? 'image/jpeg' : 'image/png';
 
     try {
+        // ใช้โครงสร้างโมเดลหลักผ่านเวอร์ชันทดสอบ v1beta ที่รองรับการสแกนภาพและอ่านพิกเซลตัวเลข
         const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{
                         parts: [
-                            { inline_data: { mime_type: mimeType, data: scanImageBase64 } },
+                            { inlineData: { mimeType: mimeType, data: scanImageBase64 } },
                             { text: CLAUDE_PROMPT }
                         ]
                     }]
-                    // ถอดฟิลด์ responseMimeType ออกเนื่องจากเวอร์ชันคอร์ v1 หลักไม่รองรับฟิลด์คำสั่งนี้
                 })
             }
         );
@@ -424,7 +423,7 @@ async function doScanGemini() {
         const data = await resp.json();
         let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
         
-        // กรองล้างอักษรขยะหรือโครงสร้าง Markdown ที่ระบบแถมกลับมาให้อัตโนมัติ ป้องกัน JSON ล่ม
+        // ล้างอักษรเกริ่นนำหรือกรอบ Markdown Backticks ป้องกัน JSON สตริงล่ม
         text = text.replace(/```json/g, "").replace(/```/g, "").trim();
         
         let result = JSON.parse(text);
@@ -662,7 +661,7 @@ function render(){
         const card=document.createElement('div');card.className='day-card';let rows='';
         day.items.forEach((item,idx)=>{
             const key=day.id+'_'+idx;if(!counts[key])counts[key]=0;const sub=counts[key]*item.pts;
-            rows+=`<div class="item-row"><div class="dot dot-none"></div><div class="item-main"><span class="item-label">${item.label}</span><span class="item-pts">${item.pts.toLocaleString("th-TH")} แต้ม</span></div><div class="counter"><button class="btn-c" onclick="change('${key}','${day.id}',-1)">−</button><input class="cnt-input" id="cnt_${key}" type="number" value="${counts[key]}" onchange="handleInput('${key}','${day.id}')"><button class="btn-c" onclick="change('${key}','${day.id}',1)">+</button></div><span class="item-sub">${sub>0?sub.toLocaleString("th-TH"):'—'}</span></div>`;
+            rows+=`<div class="item-row"><div class="dot dot-none"></div><div class="item-main"><span class="item-label">${item.label}</span><span class="item-pts">${item.pts.toLocaleString("th-TH")} แต้ม</span></div><div class="counter"><button class="btn-c" onclick="change('${key}','${day.id}',-1)">−</button><input class="cnt-input" id="cnt_${key}" type="number" value="${counts[key]}" onchange="handleInput('${key}','${day.id}')" oninput="handleInput('${key}','${day.id}')"><button class="btn-c" onclick="change('${key}','${day.id}',1)">+</button></div><span class="item-sub">${sub>0?sub.toLocaleString("th-TH"):'—'}</span></div>`;
         });
         card.innerHTML=`<div class="day-header ${day.cls}"><span class="day-name">${day.name}</span><span class="day-total">${getDayTotal(day).toLocaleString("th-TH")} คะแนน</span></div><div class="items-list">${rows}</div>`;
         grid.appendChild(card);
@@ -671,7 +670,7 @@ function render(){
 }
 
 function change(key,dayId,delta){const counts=getCounts();counts[key]=Math.max(0,(counts[key]||0)+delta);updateItem(key,dayId);}
-function handleInput(key,dayId){const v=parseInt(document.getElementById('cnt_'+key).value)||0;const counts=getCounts();counts[key]=Math.max(0,v);updateItem(key,dayId);}
+function handleInput(key,dayId){const v=parseInt(document.getElementById('cnt_'+key).value)||0;const counts=getCounts();counts[key]=Math.max(0,v);document.getElementById('cnt_'+key).value=counts[key];updateItem(key,dayId);}
 function resetAll(){if(!confirm('รีเซ็ตคะแนนทั้งหมด?')) return; const counts=getCounts(); Object.keys(counts).forEach(k=>counts[k]=0); saveToStorage(); render();}
 function downloadHTML(){const blob=new Blob([document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='daily_score_calculator.html';a.click();}
 function updateProfileDropdown(){document.getElementById('profile-select').innerHTML="<option value='Default'>Default</option>";}
